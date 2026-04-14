@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: molt-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    rootContext: server
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: OKX_API_KEY
+        sync: false
+        placeholder: "Your OKX API Key"
+      - key: OKX_SECRET_KEY
+        sync: false
+        placeholder: "Your OKX Secret"
+      - key: OKX_PASSPHRASE
+        sync: false
+        placeholder: "Your OKX Passphrase"
+      - key: KEEPER_WALLET
+        sync: false
+        placeholder: "0x..."
+      - key: HUNTER_WALLET
+        sync: false
+        placeholder: "0x..."
+      - key: ARCHITECT_WALLET
+        sync: false
+        placeholder: "0x..."
