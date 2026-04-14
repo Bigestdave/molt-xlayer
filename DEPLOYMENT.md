@@ -6,7 +6,18 @@ This guide details how to deploy the Molt system for the X Layer hackathon submi
 - Ensure you have an A-Record for your subdomain `xlayer.agentmolt.live` pointing to your deployment or handled by your host.
 - *Note: If using Vercel/Render, they provide their own SSL/Domain management.*
 
-## 2. Backend Deployment (Render)
+## 2. Obtaining your OKX API Keys (Required)
+
+To make the agent functional, you need to create API credentials from your OKX account:
+1. Log in to [OKX API Management](https://www.okx.com/account/my-api).
+2. Click **Create V5 API Key**.
+3. **API Key Name**: `Molt-Demo`.
+4. **Passphrase**: Create a unique passphrase (you will need this for Render).
+5. **Permissions**: Check **Read** and **Trade**.
+6. **IP Address**: Leave blank.
+7. Copy the **API Key**, **Secret Key**, and **Passphrase**. Use these in the Render Environment Variables.
+
+## 3. Backend Deployment (Render)
 
 The backend acts as the bridge for **Onchain OS** skills.
 

@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: node index.js
-    rootContext: server
+    rootDir: server
     envVars:
       - key: PORT
         value: 3001
