@@ -87,7 +87,7 @@ async function runCLI(args) {
     };
 
     const { stdout, stderr } = await execFilePromise('onchainos', args, { env, maxBuffer: 1024 * 1024 * 5 });
-    console.log(`[CLI Exec]: onchainos ${args.join(' ')}`);
+    console.log('[CLI Exec]: onchainos command executed');
     if (stderr && !stderr.includes('Warning')) {
       console.warn(`[CLI Stderr]: ${stderr}`);
     }
@@ -98,7 +98,7 @@ async function runCLI(args) {
       return { success: true, data: stdout.trim() };
     }
   } catch (error) {
-    console.error(`[CLI Error]: Execution failed for onchainos ${args.join(' ')}`, error.message);
+    console.error('[CLI Error]: Execution failed for onchainos command', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -203,7 +203,8 @@ app.post('/api/economy/tax', async (req, res) => {
 // 6. x402 Creature Chat
 app.post('/api/chat/x402', async (req, res) => {
   const { message, personality } = req.body;
-  if (typeof message !== 'string' || message.trim().length === 0 || message.length > 2000) {
+  const trimmedMessage = typeof message === 'string' ? message.trim() : '';
+  if (!trimmedMessage || trimmedMessage.length > 2000) {
     return res.status(400).json({ success: false, error: 'Invalid message payload.' });
   }
   if (!['keeper', 'hunter', 'architect'].includes(personality)) {
