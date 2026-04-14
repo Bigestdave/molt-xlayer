@@ -134,7 +134,8 @@ export async function fetchVaults(chainId?: number): Promise<NormalizedVault[]> 
     if (!res.ok) throw new Error(`API returned ${res.status}`);
     const result = await res.json();
     if (!result.success) throw new Error(result.error);
-    const source: 'live' | 'mock' = result.isMock ? 'mock' : 'live';
+    const isUsingMockData = Boolean(result.isMock);
+    const source: 'live' | 'mock' = isUsingMockData ? 'mock' : 'live';
     const vaults = (result.data as RawVault[]).map((v) => ({ ...v, source }));
     if (vaults.length === 0) throw new Error('Empty response');
     const norm = vaults.map(normalizeVault);
@@ -237,6 +238,8 @@ export async function getComposerQuote(params: {
   fromAmount: string;
 }): Promise<ComposerQuote> {
   const queryParams = new URLSearchParams({
+    // Some OKX docs use `chainId`, while others use `fromChainId`.
+    // We send both to maximize compatibility across aggregator environments.
     chainId: String(params.fromChain),
     fromChainId: String(params.fromChain),
     toChainId: String(params.toChain),
@@ -279,6 +282,7 @@ export async function getComposerQuote(params: {
     throw new Error('Composer quote failed: Empty OKX quote response');
   }
 
+  // OKX DEX responses can vary by route type/version, so we normalize across common field variants.
   const to = quoteRaw.tx?.to ?? quoteRaw.router ?? quoteRaw.to;
   const txData = quoteRaw.tx?.data ?? quoteRaw.data ?? '0x';
   const txValue = quoteRaw.tx?.value ?? quoteRaw.value ?? '0';

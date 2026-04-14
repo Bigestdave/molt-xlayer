@@ -34,6 +34,8 @@ export async function getBridgeQuote(
 
     const params = new URLSearchParams({
       path: '/api/v5/dex/aggregator/quote',
+      // Some OKX docs use `chainId`, while others use `fromChainId`.
+      // We send both to maximize compatibility across aggregator environments.
       chainId: String(fromChainId),
       fromChainId: String(fromChainId),
       toChainId: String(toChainId),

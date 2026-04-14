@@ -15,7 +15,11 @@ async function createOkxSignature(secretKey: string, payload: string): Promise<s
     ["sign"],
   );
   const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(payload));
-  return btoa(String.fromCharCode(...new Uint8Array(signature)));
+  const binary = Array.from(
+    new Uint8Array(signature),
+    (byte) => String.fromCharCode(byte),
+  ).join("");
+  return btoa(binary);
 }
 
 Deno.serve(async (req) => {
