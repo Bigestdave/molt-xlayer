@@ -18,7 +18,7 @@ export function useVaults(chainId?: number) {
   useEffect(() => {
     if (query.data) {
       setAllVaults(query.data);
-      const isMock = query.data.some(v => (v.address?.length ?? 0) < 10);
+      const isMock = query.data.some(v => v.source === 'mock' || (v.address?.length ?? 0) < 10);
       setUsingCachedData(isMock);
     }
   }, [query.data, setAllVaults, setUsingCachedData]);

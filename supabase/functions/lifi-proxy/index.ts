@@ -3,18 +3,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const EARN_BASE = "https://earn.li.fi";
-const COMPOSER_BASE = "https://li.quest";
+const OKX_WEB3_BASE = "https://web3.okx.com";
+
+async function createOkxSignature(secretKey: string, payload: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secretKey),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(payload));
+  return btoa(String.fromCharCode(...new Uint8Array(signature)));
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const LIFI_API_KEY = Deno.env.get("LIFI_API_KEY");
-  if (!LIFI_API_KEY) {
+  const OKX_PROJECT_ID = Deno.env.get("OKX_PROJECT_ID");
+  const OKX_API_KEY = Deno.env.get("OKX_API_KEY");
+  const OKX_SECRET_KEY = Deno.env.get("OKX_SECRET_KEY");
+  const OKX_PASSPHRASE = Deno.env.get("OKX_PASSPHRASE");
+  if (!OKX_PROJECT_ID || !OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
     return new Response(
-      JSON.stringify({ error: "LIFI_API_KEY not configured" }),
+      JSON.stringify({ error: "Missing OKX Web3 credentials (OKX_PROJECT_ID, OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE)" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
@@ -29,15 +44,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Route to the correct upstream
-    let base: string;
-    if (path.startsWith("/v1/earn")) {
-      base = EARN_BASE;
-    } else if (path.startsWith("/v1/quote") || path.startsWith("/v1/advanced") || path.startsWith("/v1/status")) {
-      base = COMPOSER_BASE;
-    } else {
+    // Only allow OKX Web3 DEX paths through this proxy.
+    if (!path.startsWith("/api/v5/dex/")) {
       return new Response(
-        JSON.stringify({ error: "Invalid path — must start with /v1/earn or /v1/quote" }),
+        JSON.stringify({ error: "Invalid path — must start with /api/v5/dex/" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -48,16 +58,27 @@ Deno.serve(async (req) => {
       if (key !== "path") forwardParams.set(key, value);
     });
 
-    const targetUrl = `${base}${path}${forwardParams.toString() ? "?" + forwardParams.toString() : ""}`;
+    const queryString = forwardParams.toString();
+    const requestPath = `${path}${queryString ? "?" + queryString : ""}`;
+    const targetUrl = `${OKX_WEB3_BASE}${requestPath}`;
+    const method = req.method.toUpperCase();
+    const rawBody = req.method !== "GET" && req.method !== "HEAD" ? await req.text() : "";
+    const timestamp = new Date().toISOString();
+    const signaturePayload = `${timestamp}${method}${requestPath}${rawBody}`;
+    const signature = await createOkxSignature(OKX_SECRET_KEY, signaturePayload);
 
     const res = await fetch(targetUrl, {
-      method: req.method,
+      method,
       headers: {
-        "x-lifi-api-key": LIFI_API_KEY,
+        "OK-ACCESS-KEY": OKX_API_KEY,
+        "OK-ACCESS-SIGN": signature,
+        "OK-ACCESS-TIMESTAMP": timestamp,
+        "OK-ACCESS-PASSPHRASE": OKX_PASSPHRASE,
+        "OK-ACCESS-PROJECT": OKX_PROJECT_ID,
         "Accept": "application/json",
         "Content-Type": "application/json",
       },
-      ...(req.method !== "GET" && req.method !== "HEAD" ? { body: await req.text() } : {}),
+      ...(rawBody ? { body: rawBody } : {}),
     });
 
     const data = await res.text();
@@ -71,7 +92,7 @@ Deno.serve(async (req) => {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("LI.FI proxy error:", message);
+    console.error("OKX DEX proxy error:", message);
     return new Response(
       JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

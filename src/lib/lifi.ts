@@ -1,8 +1,6 @@
 import type { NormalizedVault } from '../store/appStore';
 import { computeStabilityScore } from './stabilityScore';
 
-
-const COMPOSER_BASE_URL = 'https://li.quest';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 /** Call the lifi-proxy edge function which adds the API key server-side */
@@ -44,6 +42,7 @@ export interface RawVault {
   chain?: { name: string; id: number };
   token?: { symbol: string; name: string };
   tags?: string[];
+  source?: 'live' | 'mock';
 }
 
 export interface ChainInfo {
@@ -103,28 +102,29 @@ function normalizeVault(raw: RawVault): NormalizedVault {
     asset: raw.asset ?? raw.token?.symbol ?? raw.underlyingTokens?.[0]?.symbol ?? 'USDC',
     stabilityScore,
     apyBreakdown: raw.apyBreakdown,
+    source: raw.source ?? 'live',
   };
 }
 
 const MOCK_VAULTS: NormalizedVault[] = [
   // X Layer vaults (priority for hackathon)
-  { id: '196-aave-v3-usdc', address: '0xAaveV3XLayerUSDC', chainId: 196, chainName: 'X Layer', name: 'Aave V3 USDC (X Layer)', protocol: 'aave-v3', apy: 4.2, tvlUsd: 45_000_000, asset: 'USDC', stabilityScore: 0.94 },
-  { id: '196-quickswap-v3', address: '0xQuickSwapV3XLayer', chainId: 196, chainName: 'X Layer', name: 'QuickSwap V3 OKB/USDT', protocol: 'quickswap-v3', apy: 18.5, tvlUsd: 12_000_000, asset: 'USDC', stabilityScore: 0.30 },
-  { id: '196-dolomite-usdt', address: '0xDolomiteXLayerUSDT', chainId: 196, chainName: 'X Layer', name: 'Dolomite USDT (X Layer)', protocol: 'dolomite', apy: 8.4, tvlUsd: 28_000_000, asset: 'USDC', stabilityScore: 0.75 },
-  { id: '196-uniswap-v4-usdc', address: '0xUniswapV4XLayer', chainId: 196, chainName: 'X Layer', name: 'Uniswap V4 USDC/OKB', protocol: 'uniswap-v4', apy: 14.2, tvlUsd: 8_500_000, asset: 'USDC', stabilityScore: 0.45 },
+  { id: '196-aave-v3-usdc', address: '0xAaveV3XLayerUSDC', chainId: 196, chainName: 'X Layer', name: 'Aave V3 USDC (X Layer)', protocol: 'aave-v3', apy: 4.2, tvlUsd: 45_000_000, asset: 'USDC', stabilityScore: 0.94, source: 'mock' },
+  { id: '196-quickswap-v3', address: '0xQuickSwapV3XLayer', chainId: 196, chainName: 'X Layer', name: 'QuickSwap V3 OKB/USDT', protocol: 'quickswap-v3', apy: 18.5, tvlUsd: 12_000_000, asset: 'USDC', stabilityScore: 0.30, source: 'mock' },
+  { id: '196-dolomite-usdt', address: '0xDolomiteXLayerUSDT', chainId: 196, chainName: 'X Layer', name: 'Dolomite USDT (X Layer)', protocol: 'dolomite', apy: 8.4, tvlUsd: 28_000_000, asset: 'USDC', stabilityScore: 0.75, source: 'mock' },
+  { id: '196-uniswap-v4-usdc', address: '0xUniswapV4XLayer', chainId: 196, chainName: 'X Layer', name: 'Uniswap V4 USDC/OKB', protocol: 'uniswap-v4', apy: 14.2, tvlUsd: 8_500_000, asset: 'USDC', stabilityScore: 0.45, source: 'mock' },
   // Other chains
-  { id: '8453-0x001', address: '0x001', chainId: 8453, chainName: 'Base', name: 'Morpho USDC Vault', protocol: 'morpho', apy: 8.45, tvlUsd: 245_000_000, asset: 'USDC', stabilityScore: 0.78 },
-  { id: '42161-0x002', address: '0x002', chainId: 42161, chainName: 'Arbitrum', name: 'Aave V3 USDC Supply', protocol: 'aave-v3', apy: 5.21, tvlUsd: 890_000_000, asset: 'USDC', stabilityScore: 0.85 },
-  { id: '1-0x003', address: '0x003', chainId: 1, chainName: 'Ethereum', name: 'Compound V3 USDC', protocol: 'compound-v3', apy: 4.82, tvlUsd: 1_200_000_000, asset: 'USDC', stabilityScore: 0.92 },
-  { id: '10-0x004', address: '0x004', chainId: 10, chainName: 'Optimism', name: 'Euler USDC Lend', protocol: 'euler', apy: 7.15, tvlUsd: 156_000_000, asset: 'USDC', stabilityScore: 0.72 },
-  { id: '137-0x005', address: '0x005', chainId: 137, chainName: 'Polygon', name: 'Aave V3 USDC (Polygon)', protocol: 'aave-v3', apy: 6.34, tvlUsd: 420_000_000, asset: 'USDC', stabilityScore: 0.80 },
-  { id: '8453-0x006', address: '0x006', chainId: 8453, chainName: 'Base', name: 'Spark USDC Vault', protocol: 'spark', apy: 6.88, tvlUsd: 310_000_000, asset: 'USDC', stabilityScore: 0.76 },
-  { id: '42161-0x007', address: '0x007', chainId: 42161, chainName: 'Arbitrum', name: 'Beefy USDC Compounder', protocol: 'beefy', apy: 12.45, tvlUsd: 89_000_000, asset: 'USDC', stabilityScore: 0.58 },
-  { id: '1-0x008', address: '0x008', chainId: 1, chainName: 'Ethereum', name: 'Morpho Blue WETH', protocol: 'morpho', apy: 3.21, tvlUsd: 670_000_000, asset: 'WETH', stabilityScore: 0.82 },
-  { id: '8453-0x009', address: '0x009', chainId: 8453, chainName: 'Base', name: 'Yearn USDC Vault', protocol: 'yearn', apy: 9.67, tvlUsd: 178_000_000, asset: 'USDC', stabilityScore: 0.70 },
-  { id: '10-0x010', address: '0x010', chainId: 10, chainName: 'Optimism', name: 'Curve 3pool', protocol: 'curve', apy: 4.55, tvlUsd: 560_000_000, asset: 'USDC', stabilityScore: 0.81 },
-  { id: '42161-0x011', address: '0x011', chainId: 42161, chainName: 'Arbitrum', name: 'DeFi Yield USDC', protocol: 'defi-yield', apy: 18.92, tvlUsd: 34_000_000, asset: 'USDC', stabilityScore: 0.42 },
-  { id: '1-0x012', address: '0x012', chainId: 1, chainName: 'Ethereum', name: 'Lido stETH', protocol: 'lido', apy: 3.18, tvlUsd: 14_000_000_000, asset: 'stETH', stabilityScore: 0.95 },
+  { id: '8453-0x001', address: '0x001', chainId: 8453, chainName: 'Base', name: 'Morpho USDC Vault', protocol: 'morpho', apy: 8.45, tvlUsd: 245_000_000, asset: 'USDC', stabilityScore: 0.78, source: 'mock' },
+  { id: '42161-0x002', address: '0x002', chainId: 42161, chainName: 'Arbitrum', name: 'Aave V3 USDC Supply', protocol: 'aave-v3', apy: 5.21, tvlUsd: 890_000_000, asset: 'USDC', stabilityScore: 0.85, source: 'mock' },
+  { id: '1-0x003', address: '0x003', chainId: 1, chainName: 'Ethereum', name: 'Compound V3 USDC', protocol: 'compound-v3', apy: 4.82, tvlUsd: 1_200_000_000, asset: 'USDC', stabilityScore: 0.92, source: 'mock' },
+  { id: '10-0x004', address: '0x004', chainId: 10, chainName: 'Optimism', name: 'Euler USDC Lend', protocol: 'euler', apy: 7.15, tvlUsd: 156_000_000, asset: 'USDC', stabilityScore: 0.72, source: 'mock' },
+  { id: '137-0x005', address: '0x005', chainId: 137, chainName: 'Polygon', name: 'Aave V3 USDC (Polygon)', protocol: 'aave-v3', apy: 6.34, tvlUsd: 420_000_000, asset: 'USDC', stabilityScore: 0.80, source: 'mock' },
+  { id: '8453-0x006', address: '0x006', chainId: 8453, chainName: 'Base', name: 'Spark USDC Vault', protocol: 'spark', apy: 6.88, tvlUsd: 310_000_000, asset: 'USDC', stabilityScore: 0.76, source: 'mock' },
+  { id: '42161-0x007', address: '0x007', chainId: 42161, chainName: 'Arbitrum', name: 'Beefy USDC Compounder', protocol: 'beefy', apy: 12.45, tvlUsd: 89_000_000, asset: 'USDC', stabilityScore: 0.58, source: 'mock' },
+  { id: '1-0x008', address: '0x008', chainId: 1, chainName: 'Ethereum', name: 'Morpho Blue WETH', protocol: 'morpho', apy: 3.21, tvlUsd: 670_000_000, asset: 'WETH', stabilityScore: 0.82, source: 'mock' },
+  { id: '8453-0x009', address: '0x009', chainId: 8453, chainName: 'Base', name: 'Yearn USDC Vault', protocol: 'yearn', apy: 9.67, tvlUsd: 178_000_000, asset: 'USDC', stabilityScore: 0.70, source: 'mock' },
+  { id: '10-0x010', address: '0x010', chainId: 10, chainName: 'Optimism', name: 'Curve 3pool', protocol: 'curve', apy: 4.55, tvlUsd: 560_000_000, asset: 'USDC', stabilityScore: 0.81, source: 'mock' },
+  { id: '42161-0x011', address: '0x011', chainId: 42161, chainName: 'Arbitrum', name: 'DeFi Yield USDC', protocol: 'defi-yield', apy: 18.92, tvlUsd: 34_000_000, asset: 'USDC', stabilityScore: 0.42, source: 'mock' },
+  { id: '1-0x012', address: '0x012', chainId: 1, chainName: 'Ethereum', name: 'Lido stETH', protocol: 'lido', apy: 3.18, tvlUsd: 14_000_000_000, asset: 'stETH', stabilityScore: 0.95, source: 'mock' },
 ];
 
 export async function fetchVaults(chainId?: number): Promise<NormalizedVault[]> {
@@ -134,7 +134,8 @@ export async function fetchVaults(chainId?: number): Promise<NormalizedVault[]> 
     if (!res.ok) throw new Error(`API returned ${res.status}`);
     const result = await res.json();
     if (!result.success) throw new Error(result.error);
-    const vaults = result.data;
+    const source: 'live' | 'mock' = result.isMock ? 'mock' : 'live';
+    const vaults = (result.data as RawVault[]).map((v) => ({ ...v, source }));
     if (vaults.length === 0) throw new Error('Empty response');
     const norm = vaults.map(normalizeVault);
     if (chainId) return norm.filter(v => v.chainId === chainId);
@@ -236,13 +237,14 @@ export async function getComposerQuote(params: {
   fromAmount: string;
 }): Promise<ComposerQuote> {
   const queryParams = new URLSearchParams({
-    fromChain: String(params.fromChain),
-    toChain: String(params.toChain),
-    fromToken: params.fromToken,
-    toToken: params.toToken,
-    fromAddress: params.fromAddress,
-    toAddress: params.fromAddress,
-    fromAmount: params.fromAmount,
+    chainId: String(params.fromChain),
+    fromChainId: String(params.fromChain),
+    toChainId: String(params.toChain),
+    fromTokenAddress: params.fromToken,
+    toTokenAddress: params.toToken,
+    amount: params.fromAmount,
+    userWalletAddress: params.fromAddress,
+    slippage: '0.005',
   });
 
   // Intercept mock vaults for the hackathon demo to ensure a successful "dummy" deposit works
@@ -262,7 +264,7 @@ export async function getComposerQuote(params: {
     };
   }
 
-  const res = await proxyFetch('/v1/quote', queryParams);
+  const res = await proxyFetch('/api/v5/dex/aggregator/quote', queryParams);
   if (!res.ok) {
     const err = await res.text();
     const lower = err.toLowerCase();
@@ -271,5 +273,36 @@ export async function getComposerQuote(params: {
     }
     throw new Error(`Composer quote failed: ${err}`);
   }
-  return res.json();
+  const data = await res.json();
+  const quoteRaw = Array.isArray(data?.data) ? data.data[0] : data?.data ?? data;
+  if (!quoteRaw) {
+    throw new Error('Composer quote failed: Empty OKX quote response');
+  }
+
+  const to = quoteRaw.tx?.to ?? quoteRaw.router ?? quoteRaw.to;
+  const txData = quoteRaw.tx?.data ?? quoteRaw.data ?? '0x';
+  const txValue = quoteRaw.tx?.value ?? quoteRaw.value ?? '0';
+  const gasLimit = quoteRaw.tx?.gas ?? quoteRaw.gas ?? undefined;
+  const approvalAddress = quoteRaw.dexRouterAddress ?? quoteRaw.router ?? quoteRaw.approveTarget;
+  const toAmount = quoteRaw.toTokenAmount ?? quoteRaw.toAmount ?? quoteRaw.outAmount ?? params.fromAmount;
+  const minToAmount = quoteRaw.minToTokenAmount ?? quoteRaw.toAmountMin ?? toAmount;
+
+  if (!to) {
+    throw new Error('Composer quote failed: Missing transaction target from OKX DEX quote');
+  }
+
+  return {
+    transactionRequest: {
+      to,
+      data: txData,
+      value: txValue,
+      gasLimit: gasLimit ? String(gasLimit) : undefined,
+      chainId: params.fromChain,
+    },
+    estimate: {
+      toAmount: String(toAmount),
+      toAmountMin: String(minToAmount),
+      approvalAddress: approvalAddress ? String(approvalAddress) : undefined,
+    },
+  };
 }

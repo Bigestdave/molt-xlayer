@@ -45,6 +45,7 @@ async function runCLI(command, fallbackData) {
     // Inject OKX credentials into the environment for non-interactive auth
     const env = { 
       ...process.env,
+      OKX_PROJECT_ID: process.env.OKX_PROJECT_ID,
       OKX_API_KEY: process.env.OKX_API_KEY,
       OKX_SECRET_KEY: process.env.OKX_SECRET_KEY,
       OKX_PASSPHRASE: process.env.OKX_PASSPHRASE
