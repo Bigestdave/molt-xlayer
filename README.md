@@ -90,6 +90,13 @@ npm install
 node index.js
 ```
 
+### Required environment variables (production mode)
+
+- `VITE_WALLETCONNECT_PROJECT_ID` (for wallet connectors including MetaMask flow via RainbowKit)
+- `VITE_API_BASE_URL` (URL of your backend)
+- `KEEPER_WALLET`, `HUNTER_WALLET`, `ARCHITECT_WALLET` (real X Layer agentic wallet addresses) **or** working `onchainos wallet addresses --chain xlayer`
+- `OKX_PROJECT_ID`, `OKX_API_KEY`, `OKX_SECRET_KEY`, `OKX_PASSPHRASE`
+
 ## Demo Flow
 
 1. Open app → see creature in egg state
