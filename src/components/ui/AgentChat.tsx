@@ -116,7 +116,6 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
           { role: 'assistant', content: `Execution failed: ${result.error}` },
         ]);
       }
-      }
       setIsLoading(false);
       return;
     }
