@@ -269,6 +269,9 @@ export async function getComposerQuote(params: {
 
   const res = await proxyFetch('/api/v5/dex/aggregator/quote', queryParams);
   if (!res.ok) {
+    if (res.status === 503) {
+      throw new Error('Swap quotes are unavailable — OKX DEX is not available in your region or is not configured for this deployment.');
+    }
     const err = await res.text();
     const lower = err.toLowerCase();
     if (lower.includes('insufficient') || lower.includes('not enough') || lower.includes('balance') || lower.includes('gas estimation')) {

@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
   const OKX_PASSPHRASE = Deno.env.get("OKX_PASSPHRASE");
   if (!OKX_PROJECT_ID || !OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
     return new Response(
-      JSON.stringify({ error: "Missing OKX Web3 credentials (OKX_PROJECT_ID, OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE)" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "OKX DEX service is not configured for this deployment.", okx_unavailable: true }),
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
