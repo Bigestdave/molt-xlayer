@@ -55,14 +55,18 @@ export default function CreatureCanvas({
   }, [creatureState]);
 
   const draw = useCallback((ctx: CanvasRenderingContext2D, dt: number) => {
-    const cx = size / 2;
-    const cy = size / 2;
+    const logicalSize = 220;
+    const cx = logicalSize / 2;
+    const cy = logicalSize / 2;
     const dpr = window.devicePixelRatio || 1;
     const speed = PERSONALITY_SPEEDS[personality];
 
     ctx.clearRect(0, 0, size * dpr, size * dpr);
     ctx.save();
     ctx.scale(dpr, dpr);
+    
+    const drawScale = size / logicalSize;
+    ctx.scale(drawScale, drawScale);
 
     timeRef.current += dt * 0.001;
     const t = timeRef.current;
