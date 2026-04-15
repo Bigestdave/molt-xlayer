@@ -241,7 +241,7 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
                     borderColor: q.includes('Execute') ? `rgba(${accentRgb}, 0.5)` : `rgba(${accentRgb}, 0.2)`,
                     color: q.includes('Execute') ? accent : 'var(--yp-text-secondary)',
                     background: q.includes('Execute') ? `rgba(${accentRgb}, 0.08)` : `rgba(${accentRgb}, 0.04)`,
-                    boxShadow: q.includes('Execute') ? `0 0 20px rgba(${accentRgb}, 0.3)` : undefined,
+                    boxShadow: q.includes('Execute') ? `0 0 20px rgba(${accentRgb}, 0.15)` : undefined,
                   }}
                 >
                   {q.includes('Execute') && <Play size={12} color={accent} className="fill-current" />}
@@ -379,3 +379,4 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
     </AnimatePresence>
   );
 }
+
