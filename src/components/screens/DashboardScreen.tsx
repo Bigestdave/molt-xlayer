@@ -71,21 +71,6 @@ function WalletMenu() {
           >
             Disconnect Wallet
           </button>
-          <button
-            onClick={() => { disconnect(); reset(); setOpen(false); }}
-            className="w-full text-left px-4 py-3 font-data text-[11px] text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer border-t border-[var(--yp-border)]"
-          >
-            Reset Session (Temporary)
-          </button>
-          <button
-            onClick={() => {
-              localStorage.clear();
-              window.location.reload();
-            }}
-            className="w-full text-left px-4 py-3 font-data text-[11px] text-red-600 font-bold hover:bg-red-600/10 transition-colors cursor-pointer border-t border-[var(--yp-border)]"
-          >
-            🔥 Factory Reset (Hard)
-          </button>
         </motion.div>
       )}
     </div>
