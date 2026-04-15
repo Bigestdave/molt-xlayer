@@ -58,8 +58,8 @@ export default function DepositMoreModal({ open, onClose, accent, accentRgb }: D
   const handleDeposit = async () => {
     if (!activeVault || !address) return;
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 1) {
-      toast.error('Enter a valid amount (minimum $1)');
+    if (isNaN(numAmount) || numAmount < 0.05) {
+      toast.error('Enter a valid amount (minimum $0.05)');
       return;
     }
     const fromUsdcAddress = USDC_ADDRESSES[sourceChainId];
