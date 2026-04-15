@@ -1,30 +1,31 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send } from 'lucide-react';
+import { X, Send, Play } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { getPersonality } from '../../lib/personalities';
 import { API_BASE_URL } from '../../lib/lifi';
 import { toast } from 'sonner';
+import { useXLayerAgent } from './../../hooks/useXLayerAgent';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
 const CHAT_URL = '/api/chat/x402';
 
 const SUGGESTED_QUESTIONS = [
+  "Execute X Layer Agent",
   "How is my position doing?",
-  "Should I rebalance?",
-  "What are the risks?",
   "Tell me about your economy loop",
 ];
 
 interface AgentChatProps {
   accent: string;
   accentRgb: string;
-  open: boolean;
-  onClose: () => void;
+  open?: boolean;
+  onClose?: () => void;
+  isEmbedded?: boolean;
 }
 
-export default function AgentChat({ accent, accentRgb, open, onClose }: AgentChatProps) {
+export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded = false }: AgentChatProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,10 +50,10 @@ export default function AgentChat({ accent, accentRgb, open, onClose }: AgentCha
   }, [messages]);
 
   useEffect(() => {
-    if (open && inputRef.current) {
+    if ((open || isEmbedded) && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
-  }, [open]);
+  }, [open, isEmbedded]);
 
   const getPortfolioContext = useCallback(() => {
     if (!config || !activeVault || !deposit) return {};
@@ -81,8 +82,43 @@ export default function AgentChat({ accent, accentRgb, open, onClose }: AgentCha
     };
   }, [config, activeVault, deposit, earnedUSD, creatureName, creatureState, rebalanceCount, allVaults]);
 
+  const { runAutonomousCycle } = useXLayerAgent();
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
+
+    const isExecuteCommand = text.toLowerCase().includes('execute x layer agent') || text.toLowerCase().includes('run agent');
+
+    const userMsg: Msg = { role: 'user', content: text.trim() };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setInput('');
+    setIsLoading(true);
+
+    if (isExecuteCommand) {
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: 'Initiating X Layer autonomous execution loop...\nBypassing human approval mechanisms.\nExecuting Uniswap rebalance protocol...' },
+        ]);
+      }, 500);
+
+      const result = await runAutonomousCycle();
+
+      if (result.success) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: `Execution complete. Organism self-sustained.\n\nRebalance TX: ${result.rebalanceTxHash?.slice(0, 10)}...\nEconomy Tax Harvest: ${result.taxTxHash?.slice(0, 10)}...` },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: `Execution failed: ${result.error}` },
+        ]);
+      }
+      setIsLoading(false);
+      return;
+    }
 
     const userMsg: Msg = { role: 'user', content: text.trim() };
     const newMessages = [...messages, userMsg];
@@ -131,187 +167,220 @@ export default function AgentChat({ accent, accentRgb, open, onClose }: AgentCha
 
   if (!config) return null;
 
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ y: '100%', opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: '100%', opacity: 0 }}
-          transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 sm:bottom-5 sm:left-auto sm:right-5 z-50 w-full sm:w-[380px] flex flex-col sm:rounded-2xl overflow-hidden border"
-          style={{
-            background: 'var(--yp-bg)',
-            borderColor: `rgba(${accentRgb}, 0.3)`,
-            height: '85dvh',
-            maxHeight: '520px',
-          }}
-        >
-          {/* Header */}
-          <div
-            className="flex items-center justify-between px-4 py-3 border-b shrink-0"
-            style={{
-              borderColor: `rgba(${accentRgb}, 0.2)`,
-              background: `rgba(${accentRgb}, 0.05)`,
-            }}
+  const chatContent = (
+    <div
+      className={`flex flex-col overflow-hidden border ${
+        isEmbedded ? 'h-full rounded-2xl w-full' : 'fixed bottom-0 left-0 right-0 sm:bottom-5 sm:right-5 w-full sm:w-[380px] sm:rounded-2xl z-50 h-[85dvh] max-h-[520px]'
+      }`}
+      style={{
+        background: isEmbedded ? 'transparent' : 'var(--yp-bg)',
+        borderColor: `rgba(${accentRgb}, 0.25)`,
+        boxShadow: isEmbedded ? 'none' : `0 20px 50px rgba(0,0,0,0.5)`,
+      }}
+    >
+      {/* Premium Scanline Overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-0" style={{ background: `repeating-linear-gradient(0deg, transparent, transparent 1px, ${accent} 2px)` }} />
+      
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-4 py-3.5 border-b shrink-0 z-10"
+        style={{
+          borderColor: `rgba(${accentRgb}, 0.15)`,
+          background: `linear-gradient(90deg, rgba(${accentRgb}, 0.08), transparent)`,
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <config.icon size={16} color={accent} />
+            <div className="absolute -inset-1 blur-sm opacity-50" style={{ background: accent }} />
+          </div>
+          <div>
+            <span className="font-display font-bold text-[13px] tracking-tight">Chat with {creatureName || config.name}</span>
+            <div className="font-data text-[8px] text-[var(--yp-text-muted)] tracking-[0.1em] flex items-center gap-1.5 uppercase">
+              <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: accent }} />
+              x402 ENCRYPTED · 0.001 USDC
+            </div>
+          </div>
+        </div>
+        {!isEmbedded && onClose && (
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors cursor-pointer"
           >
-            <div className="flex items-center gap-2.5">
-              <config.icon size={16} color={accent} />
-              <div>
-                <span className="font-display font-bold text-[13px]">Chat with {creatureName || config.name}</span>
-                <div className="font-data text-[9px] text-[var(--yp-text-muted)] tracking-[0.08em]">
-                  {config.name.toUpperCase()} · x402 GATED · 0.001 USDC/MSG
-                </div>
+            <X size={14} className="text-[var(--yp-text-muted)]" />
+          </button>
+        )}
+      </div>
+
+      {/* Messages */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto custom-scrollbar px-4 py-5 flex flex-col gap-4 z-10"
+        style={{ minHeight: 0 }}
+      >
+        {messages.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex-1 flex flex-col items-center justify-center gap-5 py-8"
+          >
+            <div
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center relative group`}
+              style={{ background: `rgba(${accentRgb}, 0.05)`, border: `1px solid rgba(${accentRgb}, 0.2)` }}
+            >
+              <div className="absolute inset-0 rounded-2xl animate-pulse blur-md opacity-20" style={{ background: accent }} />
+              <config.icon size={24} color={accent} />
+            </div>
+            <div className="text-center">
+              <div className="font-display font-bold text-[14px] mb-1.5 tracking-tight">System Identity: {creatureName || config.name}</div>
+              <div className="font-data text-[10px] text-[var(--yp-text-muted)] tracking-[0.05em] px-6 max-w-[280px]">
+                Ask me about yield performance, risks, or the economy loop.
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--yp-surface-2)] transition-colors cursor-pointer"
-            >
-              <X size={14} className="text-[var(--yp-text-muted)]" />
-            </button>
-          </div>
+            <div className="flex flex-wrap gap-2 justify-center max-w-[320px]">
+              {SUGGESTED_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => sendMessage(q)}
+                  className="font-data text-[10px] px-3 py-1.5 rounded-lg border cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:border-[var(--yp-border-hover)]"
+                  style={{
+                    borderColor: q.includes('Execute') ? `rgba(${accentRgb}, 0.5)` : `rgba(${accentRgb}, 0.2)`,
+                    color: q.includes('Execute') ? accent : 'var(--yp-text-secondary)',
+                    background: q.includes('Execute') ? `rgba(${accentRgb}, 0.1)` : `rgba(${accentRgb}, 0.04)`,
+                    boxShadow: q.includes('Execute') ? `0 0 10px rgba(${accentRgb}, 0.1)` : undefined,
+                  }}
+                >
+                  {q.includes('Execute') && <Play size={10} color={accent} className="fill-current" />}
+                  {q}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
-          {/* Messages */}
-          <div
-            ref={scrollRef}
-            className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4 flex flex-col gap-3"
-            style={{ minHeight: 0 }}
+        {messages.map((msg, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: msg.role === 'user' ? 10 : -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            {messages.length === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: `rgba(${accentRgb}, 0.1)`, border: `1px solid rgba(${accentRgb}, 0.2)` }}
-                >
-                  <config.icon size={20} color={accent} />
+            <div
+              className={`max-w-[90%] rounded-2xl px-4 py-3 relative group ${
+                msg.role === 'user' ? 'rounded-br-none' : 'rounded-bl-none'
+              }`}
+              style={
+                msg.role === 'user'
+                  ? { background: `linear-gradient(135deg, ${accent}, rgba(${accentRgb}, 0.8))`, color: '#000' }
+                  : {
+                      background: 'rgba(255,255,255,0.03)',
+                      border: `1px solid rgba(${accentRgb}, 0.1)`,
+                    }
+              }
+            >
+              {msg.role === 'assistant' && (
+                <div className="flex items-center gap-1.5 mb-2">
+                  <config.icon size={10} color={accent} />
+                  <span className="font-data text-[8px] tracking-[0.2em] font-bold uppercase opacity-60" style={{ color: accent }}>
+                    {(creatureName || config.name)}
+                  </span>
                 </div>
-                <div className="text-center">
-                  <div className="font-display font-bold text-[13px] mb-1">Talk to {creatureName || 'your agent'}</div>
-                  <div className="font-data text-[10px] text-[var(--yp-text-muted)]">
-                    Each question costs 0.001 USDC via x402
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1.5 justify-center max-w-[280px]">
-                  {SUGGESTED_QUESTIONS.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => sendMessage(q)}
-                      className="font-data text-[10px] px-3 py-1.5 rounded-lg border cursor-pointer transition-all hover:border-[var(--yp-border-hover)]"
-                      style={{
-                        borderColor: `rgba(${accentRgb}, 0.2)`,
-                        color: 'var(--yp-text-secondary)',
-                        background: `rgba(${accentRgb}, 0.04)`,
-                      }}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              )}
+              <p
+                className={`font-data text-[12px] leading-[1.6] whitespace-pre-wrap ${
+                  msg.role === 'user' ? 'font-semibold' : ''
+                }`}
+                style={msg.role === 'assistant' ? { color: 'var(--yp-text-secondary)' } : { color: '#000' }}
               >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
-                    msg.role === 'user' ? 'rounded-br-md' : 'rounded-bl-md'
-                  }`}
-                  style={
-                    msg.role === 'user'
-                      ? { background: accent, color: '#000' }
-                      : {
-                          background: 'var(--yp-surface)',
-                          border: `1px solid var(--yp-border)`,
-                        }
-                  }
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <config.icon size={10} color={accent} />
-                      <span className="font-data text-[8px] tracking-[0.1em]" style={{ color: accent }}>
-                        {(creatureName || config.name).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <p
-                    className={`font-data text-[12px] leading-[1.7] whitespace-pre-wrap ${
-                      msg.role === 'user' ? 'font-medium' : ''
-                    }`}
-                    style={msg.role === 'assistant' ? { color: 'var(--yp-text-secondary)' } : undefined}
+                {msg.content}
+              </p>
+            </div>
+          </motion.div>
+        ))}
+
+        {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+          <div className="flex justify-start">
+            <div className="rounded-2xl rounded-bl-none px-4 py-4 bg-white/5 border border-white/10 min-w-[200px]">
+              <div className="flex items-center gap-1.5 mb-3">
+                <config.icon size={10} color={accent} className="animate-spin-slow" />
+                <span className="font-data text-[8px] tracking-[0.2em] uppercase opacity-50" style={{ color: accent }}>
+                  Thinking...
+                </span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {['w-[90%]', 'w-[75%]', 'w-[50%]'].map((w, i) => (
+                  <div
+                    key={i}
+                    className={`h-[12px] rounded-lg ${w} overflow-hidden`}
+                    style={{ background: `rgba(${accentRgb}, 0.05)` }}
                   >
-                    {msg.content}
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-md px-4 py-3 bg-[var(--yp-surface)] border border-[var(--yp-border)] min-w-[180px]">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <config.icon size={10} color={accent} />
-                    <span className="font-data text-[8px] tracking-[0.1em]" style={{ color: accent }}>
-                      {(creatureName || config.name).toUpperCase()}
-                    </span>
+                    <div
+                      className="h-full w-[200%] rounded-lg"
+                      style={{
+                        background: `linear-gradient(90deg, transparent 25%, rgba(${accentRgb}, 0.15) 50%, transparent 75%)`,
+                        animation: `shimmer 2s ease-in-out infinite`,
+                        animationDelay: `${i * 0.2}s`,
+                      }}
+                    />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    {['w-[85%]', 'w-[60%]', 'w-[40%]'].map((w, i) => (
-                      <div
-                        key={i}
-                        className={`h-[10px] rounded-md ${w} overflow-hidden`}
-                        style={{ background: `rgba(${accentRgb}, 0.08)` }}
-                      >
-                        <div
-                          className="h-full w-[200%] rounded-md"
-                          style={{
-                            background: `linear-gradient(90deg, transparent 25%, rgba(${accentRgb}, 0.2) 50%, transparent 75%)`,
-                            animation: `shimmer 1.5s ease-in-out infinite`,
-                            animationDelay: `${i * 0.15}s`,
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
+        )}
+      </div>
 
-          {/* Input */}
-          <div
-            className="px-3 py-3 border-t shrink-0"
-            style={{ borderColor: 'var(--yp-border)' }}
+      {/* Input */}
+      <div
+        className="px-4 py-4 border-t shrink-0 z-10"
+        style={{ borderColor: `rgba(${accentRgb}, 0.1)`, background: `rgba(${accentRgb}, 0.02)` }}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage(input);
+          }}
+          className="flex items-center gap-2.5"
+        >
+          <div className="flex-1 relative">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={`Communicate with ${creatureName || 'Agent'}...`}
+              disabled={isLoading}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 font-data text-[12px] text-[var(--yp-text)] placeholder:text-[var(--yp-text-muted)] outline-none transition-all focus:border-[var(--yp-border-hover)] focus:bg-white/10 disabled:opacity-50"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer transition-all hover:scale-[1.05] active:scale-[0.95] disabled:opacity-30 disabled:cursor-not-allowed shrink-0 relative group"
+            style={{ background: accent }}
           >
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                sendMessage(input);
-              }}
-              className="flex items-center gap-2"
-            >
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={`Ask ${creatureName || 'your agent'}...`}
-                disabled={isLoading}
-                className="flex-1 bg-[var(--yp-surface)] border border-[var(--yp-border)] rounded-xl px-3.5 py-2.5 font-data text-[12px] text-[var(--yp-text)] placeholder:text-[var(--yp-text-muted)] outline-none transition-colors focus:border-[var(--yp-border-hover)] disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                style={{ background: accent }}
-              >
-                <Send size={14} color="#000" />
-              </button>
-            </form>
-          </div>
-        </motion.div>
+            <div className="absolute inset-0 rounded-2xl blur-md opacity-0 group-hover:opacity-40 transition-opacity" style={{ background: accent }} />
+            <Send size={18} color="#000" />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
+  return (
+    <AnimatePresence>
+      {isEmbedded ? (
+        <div className="h-full w-full">{chatContent}</div>
+      ) : (
+        open && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+          >
+            {chatContent}
+          </motion.div>
+        )
       )}
     </AnimatePresence>
   );

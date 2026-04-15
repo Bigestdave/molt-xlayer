@@ -18,6 +18,7 @@ import DepositMoreModal from '../ui/DepositMoreModal';
 import WithdrawModal from '../ui/WithdrawModal';
 import TransactionHistory from '../ui/TransactionHistory';
 import AgentChat from '../ui/AgentChat';
+import AgentConsole from '../ui/AgentConsole';
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
@@ -72,9 +73,18 @@ function WalletMenu() {
           </button>
           <button
             onClick={() => { disconnect(); reset(); setOpen(false); }}
-            className="w-full text-left px-4 py-3 font-data text-[11px] text-red-400 hover:bg-[var(--yp-surface-2)] transition-colors cursor-pointer border-t border-[var(--yp-border)]"
+            className="w-full text-left px-4 py-3 font-data text-[11px] text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer border-t border-[var(--yp-border)]"
           >
-            Reset & Start Over
+            Reset Session (Temporary)
+          </button>
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            className="w-full text-left px-4 py-3 font-data text-[11px] text-red-600 font-bold hover:bg-red-600/10 transition-colors cursor-pointer border-t border-[var(--yp-border)]"
+          >
+            🔥 Factory Reset (Hard)
           </button>
         </motion.div>
       )}
@@ -232,12 +242,10 @@ export default function DashboardScreen() {
           </div>
           <WalletMenu />
         </div>
-      </nav>
-
-      {/* Dashboard body */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-0 overflow-hidden lg:h-[calc(100dvh-57px)]">
+      <      {/* Dashboard body */}
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[350px_1fr_400px] lg:grid-cols-[320px_1fr] gap-0 overflow-hidden lg:h-[calc(100dvh-57px)]">
         {/* ═══════ LEFT: CREATURE PANEL ═══════ */}
-        <div className="border-b lg:border-b-0 lg:border-r border-[var(--yp-border)] flex flex-col overflow-y-auto custom-scrollbar">
+        <div className="border-b lg:border-b-0 lg:border-r border-[var(--yp-border)] flex flex-col overflow-y-auto custom-scrollbar bg-[var(--yp-surface)]/30">
           {/* Creature canvas — compact on mobile */}
           <motion.div
             {...fadeUp(0)}
@@ -247,10 +255,8 @@ export default function DashboardScreen() {
               background: `radial-gradient(ellipse at 50% 60%, rgba(${config.accentRgb}, 0.07) 0%, transparent 70%)`,
             }}
           >
-            <button
-              onClick={() => setShowChat(true)}
-              className="animate-float mb-3 sm:mb-4 cursor-pointer transition-transform hover:scale-105 active:scale-95 relative group"
-              title={`Chat with ${creatureName}`}
+            <div
+              className="mb-3 sm:mb-4 relative group"
             >
               <CreatureCanvas
                 personality={personality!}
@@ -260,17 +266,7 @@ export default function DashboardScreen() {
                 creatureState={creatureState}
                 size={220}
               />
-              <div
-                className="absolute -bottom-1 left-1/2 -translate-x-1/2 font-data text-[8px] tracking-[0.1em] px-2.5 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap"
-                style={{
-                  background: `rgba(${config.accentRgb}, 0.15)`,
-                  color: config.accent,
-                  border: `1px solid rgba(${config.accentRgb}, 0.25)`,
-                }}
-              >
-                TAP TO CHAT
-              </div>
-            </button>
+            </div>
 
             <div
               className="font-data text-[8px] sm:text-[9px] tracking-[0.15em] px-2 py-0.5 rounded mb-1"
@@ -286,7 +282,7 @@ export default function DashboardScreen() {
           </motion.div>
 
           {/* Active position card */}
-          <div className="mx-4 sm:mx-6 mb-3 sm:mb-4 bg-[var(--yp-surface)] border border-[var(--yp-border-hover)] rounded-xl p-3 sm:p-3.5">
+          <div className="mx-4 sm:mx-6 mb-3 sm:mb-4 bg-[var(--yp-surface)] border border-[var(--yp-border-hover)] rounded-xl p-3 sm:p-3.5 shadow-sm">
             <div className="meta-label mb-1.5 sm:mb-2">ACTIVE POSITION</div>
             <div className="font-display font-bold text-[12px] sm:text-[13px] mb-0.5 sm:mb-1 truncate">{activeVault.name}</div>
             <div className="font-data text-[9px] sm:text-[10px] text-[var(--yp-text-muted)] truncate">
@@ -308,7 +304,7 @@ export default function DashboardScreen() {
 
           {/* Stats — premium bento card */}
           <div
-            className="mx-4 sm:mx-6 mb-3 sm:mb-4 rounded-2xl overflow-hidden border"
+            className="mx-4 sm:mx-6 mb-3 sm:mb-4 rounded-2xl overflow-hidden border shadow-sm"
             style={{
               borderColor: `rgba(${config.accentRgb}, 0.12)`,
               background: 'var(--yp-surface)',
@@ -320,7 +316,6 @@ export default function DashboardScreen() {
                 background: `linear-gradient(160deg, rgba(${config.accentRgb}, 0.03) 0%, transparent 50%)`,
               }}
             >
-              {/* Deposited — hero stat */}
               <div className="mb-5">
                 <div className="meta-label text-[8px] sm:text-[9px] mb-2 tracking-[0.15em]">TOTAL DEPOSITED</div>
                 <div className="flex items-baseline gap-1">
@@ -333,7 +328,6 @@ export default function DashboardScreen() {
                 </div>
               </div>
 
-              {/* Earned + APY row */}
               <div className="flex gap-3">
                 <div
                   className="flex-1 rounded-xl p-3 border overflow-hidden"
@@ -392,42 +386,49 @@ export default function DashboardScreen() {
             </motion.button>
           </div>
 
-
           {/* Vitals — compact */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-[var(--yp-border)] flex-1">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-[var(--yp-border)] flex-1 bg-[var(--yp-surface)]/20">
             <div className="meta-label mb-3 sm:mb-4 text-[8px] sm:text-[9px]">VITALS</div>
             {vitals.map(v => (
               <div key={v.label} className="flex items-center gap-2.5 sm:gap-3 mb-3">
                 <span className="font-data text-[9px] sm:text-[10px] text-[var(--yp-text-muted)] w-[55px] sm:w-[65px] shrink-0 tracking-[0.06em]">
                   {v.label}
                 </span>
-                <div className="vitals-bar-track flex-1">
-                  <div className="vitals-bar-fill" style={{ width: `${v.value}%`, background: v.color }} />
+                <div className="vitals-bar-track flex-1 h-1.5 rounded-full bg-[var(--yp-surface-3)] overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${v.value}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="h-full rounded-full shadow-[0_0_8px_rgba(var(--yp-accent-rgb),0.3)]" 
+                    style={{ background: v.color }} 
+                  />
                 </div>
-                <span className="font-data text-[9px] sm:text-[10px] text-[var(--yp-text-secondary)] w-7 sm:w-8 text-right">{v.value}%</span>
+                <span className="font-data text-[9px] sm:text-[10px] text-[var(--yp-text-secondary)] w-7 sm:w-8 text-right font-medium">{v.value}%</span>
               </div>
             ))}
-            <div className="font-data text-[9px] sm:text-[10px] text-[var(--yp-text-muted)] tracking-[0.08em] text-center mt-1 sm:mt-2">
-              ACTIVE · {minutes}M
+            <div className="font-data text-[9px] sm:text-[10px] text-[var(--yp-text-muted)] tracking-[0.08em] text-center mt-3 opacity-60">
+              Uptime: {minutes}M · MOLT SENSORS ACTIVE
             </div>
           </div>
         </div>
 
-        {/* ═══════ RIGHT: DATA PANEL ═══════ */}
-        <div className="overflow-y-auto custom-scrollbar p-4 sm:p-7 flex flex-col gap-4 sm:gap-6">
+        {/* ═══════ CENTER: DATA PANEL ═══════ */}
+        <div className="overflow-y-auto custom-scrollbar p-4 sm:p-7 flex flex-col gap-4 sm:gap-6 border-r border-[var(--yp-border)]">
           {/* Rebalance alert with AI reasoning */}
           {showRebalanceAlert && rebalanceTarget && (
             <motion.div {...fadeUp()}>
               <div
-                className="rounded-2xl p-4 sm:p-5 border"
+                className="rounded-2xl p-4 sm:p-5 border relative overflow-hidden group"
                 style={{
-                  background: `rgba(${config.accentRgb}, 0.06)`,
-                  borderColor: `rgba(${config.accentRgb}, 0.4)`,
+                  background: `linear-gradient(135deg, rgba(${config.accentRgb}, 0.08), rgba(${config.accentRgb}, 0.02))`,
+                  borderColor: `rgba(${config.accentRgb}, 0.35)`,
                 }}
               >
-                <div className="flex items-center justify-between mb-2 sm:mb-2.5">
+                 <div className="absolute inset-0 pointer-events-none opacity-[0.05] z-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,var(--yp-accent)_11px)]" />
+
+                <div className="flex items-center justify-between mb-2.5 relative z-10">
                   <div className="flex items-center gap-2 font-display font-bold text-[12px] sm:text-[13px]" style={{ color: config.accent }}>
-                    <Zap size={14} /> Rebalance Opportunity
+                    <Zap size={14} className="animate-pulse" /> Rebalance Opportunity
                   </div>
                   <button
                     onClick={() => { setShowRebalanceAlert(false); addLogEntry({ message: 'Rebalance dismissed.', type: 'warning' }); }}
@@ -437,21 +438,19 @@ export default function DashboardScreen() {
                   </button>
                 </div>
 
-                {/* Agent reasoning message */}
-                <p className="font-data text-[11px] sm:text-[12px] text-[var(--yp-text-secondary)] leading-[1.7] mb-3">
+                <p className="font-data text-[11px] sm:text-[12px] text-[var(--yp-text-secondary)] leading-[1.7] mb-3 relative z-10">
                   "{config.getRebalanceMessage(activeVault.apy, rebalanceTarget.apy, rebalanceTarget.name)}"
                 </p>
 
-                {/* Break-even analysis card */}
                 {rebalanceAnalysis && (
-                  <div className="bg-[var(--yp-surface)] rounded-xl p-3 sm:p-3.5 border border-[var(--yp-border)] mb-3 sm:mb-4">
+                  <div className="bg-[var(--yp-surface)]/80 backdrop-blur-md rounded-xl p-3 sm:p-3.5 border border-[var(--yp-border)] mb-3 sm:mb-4 relative z-10 shadow-sm">
                     <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3">
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-1 mb-1">
                           <DollarSign size={10} className="text-[var(--yp-text-muted)]" />
                           <span className="meta-label text-[7px] sm:text-[8px]">BRIDGE FEE</span>
                         </div>
-                        <div className="font-data text-[13px] sm:text-[15px] font-medium" style={{ color: config.accent }}>
+                        <div className="font-data text-[13px] sm:text-[15px] font-bold" style={{ color: config.accent }}>
                           ${rebalanceAnalysis.bridgeFeeUsd.toFixed(2)}
                         </div>
                       </div>
@@ -460,7 +459,7 @@ export default function DashboardScreen() {
                           <Clock size={10} className="text-[var(--yp-text-muted)]" />
                           <span className="meta-label text-[7px] sm:text-[8px]">BREAK-EVEN</span>
                         </div>
-                        <div className="font-data text-[13px] sm:text-[15px] font-medium" style={{ color: config.accent }}>
+                        <div className="font-data text-[13px] sm:text-[15px] font-bold" style={{ color: config.accent }}>
                           {formatBreakeven(rebalanceAnalysis.breakEvenDays)}
                         </div>
                       </div>
@@ -469,82 +468,82 @@ export default function DashboardScreen() {
                           <TrendingUp size={10} className="text-[var(--yp-text-muted)]" />
                           <span className="meta-label text-[7px] sm:text-[8px]">APY DELTA</span>
                         </div>
-                        <div className="font-data text-[13px] sm:text-[15px] font-medium" style={{ color: config.accent }}>
+                        <div className="font-data text-[13px] sm:text-[15px] font-bold" style={{ color: config.accent }}>
                           +{rebalanceAnalysis.apyDelta.toFixed(2)}%
                         </div>
                       </div>
                     </div>
 
-                    {/* Personality-specific fee reasoning */}
-                    <div className="bg-[var(--yp-bg)] rounded-lg p-2.5 sm:p-3 border border-[var(--yp-border)]">
+                    <div className="bg-[var(--yp-bg)]/50 rounded-lg p-2.5 sm:p-3 border border-[var(--yp-border)]">
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <config.icon size={12} color={config.accent} />
-                        <span className="meta-label text-[7px] sm:text-[8px]" style={{ color: config.accent }}>{config.name.toUpperCase()} ANALYSIS</span>
+                        <span className="meta-label text-[7px] sm:text-[8px] font-bold" style={{ color: config.accent }}>{config.name.toUpperCase()} ANALYSIS</span>
                       </div>
-                      <p className="font-data text-[10px] sm:text-[11px] text-[var(--yp-text-secondary)] leading-[1.7] italic">
+                      <p className="font-data text-[10px] sm:text-[11px] text-[var(--yp-text-secondary)] leading-[1.7] italic opacity-90">
                         "{config.getBreakevenReasoning(rebalanceAnalysis, rebalanceTarget.name)}"
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* APY comparison */}
-                <div className="flex items-center justify-between font-data text-[10px] sm:text-[11px] text-[var(--yp-text-muted)] mb-3 sm:mb-4 px-1">
-                  <span>{activeVault.apy.toFixed(2)}% APY</span>
-                  <span className="text-[var(--yp-text-muted)]">→</span>
-                  <span style={{ color: config.accent }}>{rebalanceTarget.apy.toFixed(2)}% APY</span>
+                <div className="flex items-center justify-between font-data text-[10px] sm:text-[11px] text-[var(--yp-text-muted)] mb-3 sm:mb-4 px-1 relative z-10">
+                  <span>Current: <b>{activeVault.apy.toFixed(2)}%</b></span>
+                  <span className="text-[var(--yp-text-muted)] px-3">→</span>
+                  <span style={{ color: config.accent }}>Target: <b>{rebalanceTarget.apy.toFixed(2)}%</b></span>
                 </div>
 
                 <motion.button
                   onClick={() => { setShowRebalanceAlert(false); setScreen('rebalance'); }}
-                  className="btn-primary text-[12px] sm:text-[13px] py-2.5 px-5 sm:px-6 w-full"
-                  style={{ background: config.accent, borderRadius: 8 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="btn-primary text-[12px] sm:text-[13px] py-3 px-6 w-full relative z-10 overflow-hidden group/btn"
+                  style={{ background: config.accent, borderRadius: 12, color: '#000' }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  Execute One-Click Migration →
+                  <span className="relative z-10 font-bold tracking-tight">Execute Migration →</span>
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-500" />
                 </motion.button>
               </div>
             </motion.div>
           )}
 
-          {/* APY Chart — THE BIG NUMBER with text glow */}
-          <motion.div {...fadeUp(0.1)} className="bento-card p-5 sm:p-6">
-            <div className="flex items-start justify-between mb-4 sm:mb-5">
+          {/* APY Chart */}
+          <motion.div {...fadeUp(0.1)} className="bento-card p-5 sm:p-6 bg-gradient-to-br from-[var(--yp-surface)] to-[var(--yp-surface)]/50">
+            <div className="flex items-start justify-between mb-4 sm:mb-6">
               <div>
-                <div className="meta-label mb-2 text-[8px] sm:text-[9px]">LIVE APY</div>
+                <div className="meta-label mb-2 text-[8px] sm:text-[9px]">LIVE STREAMS · APY</div>
                 <div className="flex items-baseline gap-1.5 sm:gap-2">
                   <span
-                    className="font-data text-[40px] sm:text-[52px] font-medium tracking-[-0.04em] leading-none text-glow"
+                    className="font-data text-[40px] sm:text-[56px] font-bold tracking-[-0.05em] leading-none text-glow"
                     style={{ color: config.accent }}
                   >
                     {activeVault.apy.toFixed(2)}
                   </span>
                   <span
-                    className="font-data text-[16px] sm:text-[20px]"
+                    className="font-data text-[18px] sm:text-[22px] font-medium"
                     style={{ color: `rgba(${config.accentRgb}, 0.5)` }}
                   >
                     %
                   </span>
                 </div>
               </div>
-              <div className="text-right mt-1">
-                <div className="font-data text-[8px] sm:text-[9px] tracking-[0.1em] text-[var(--yp-text-muted)] bg-[var(--yp-surface-2)] border border-[var(--yp-border)] rounded px-2 py-1">
-                  STABILITY {(activeVault.stabilityScore * 100).toFixed(0)}%
+              <div className="text-right">
+                <div className="font-data text-[9px] tracking-[0.1em] text-[config.accent] bg-[var(--yp-accent)]/5 border border-[var(--yp-accent)]/20 rounded-full px-3 py-1 mb-2 inline-block" style={{ color: config.accent }}>
+                   STABILITY {(activeVault.stabilityScore * 100).toFixed(0)}%
                 </div>
+                <div className="font-data text-[8px] text-[var(--yp-text-muted)] uppercase tracking-widest">Real-time update</div>
               </div>
             </div>
-            <ApyChart data={apyHistory} accentRgb={config.accentRgb} height={100} />
+            <ApyChart data={apyHistory} accentRgb={config.accentRgb} height={120} />
           </motion.div>
 
-          {/* Opportunities — responsive grid */}
+          {/* Opportunities */}
           <motion.div {...fadeUp(0.15)}>
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="meta-label text-[8px] sm:text-[9px]" style={{ opacity: 1 }}>AGENT-RANKED</div>
-              <div className="font-data text-[8px] sm:text-[9px] tracking-[0.1em] text-[var(--yp-text-muted)] bg-[var(--yp-surface-2)] border border-[var(--yp-border)] rounded px-2 py-0.5 sm:py-1">
-                {config.rankingDescription.toUpperCase()}
+            <div className="flex items-center justify-between mb-4">
+              <div className="meta-label text-[8px] sm:text-[9px]" style={{ opacity: 1 }}>AGENT RECOMMENDATIONS</div>
+              <div className="font-data text-[8px] sm:text-[9px] tracking-[0.1em] text-[var(--yp-text-muted)] bg-[var(--yp-surface-2)] border border-[var(--yp-border)] rounded-full px-3 py-1 uppercase font-medium">
+                Strategy: {config.rankingDescription}
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {rankedVaults.map((vault) => {
                 const isCurrent = vault.id === activeVault.id;
                 const isTopPick = !isCurrent && config.shouldRebalance(activeVault, vault);
@@ -553,92 +552,122 @@ export default function DashboardScreen() {
                 return (
                   <div
                     key={vault.id}
-                    className="bg-[var(--yp-surface)] border border-[var(--yp-border)] rounded-xl p-3.5 sm:p-4 relative transition-all duration-200 hover:border-[var(--yp-border-hover)] hover:bg-[var(--yp-surface-2)] min-h-[100px]"
+                    className="bg-[var(--yp-surface)] border border-[var(--yp-border)] rounded-2xl p-4 relative transition-all duration-300 hover:border-[var(--yp-border-hover)] hover:bg-[var(--yp-surface-3)] group cursor-pointer"
                     style={
-                      isCurrent ? { borderColor: `rgba(${config.accentRgb}, 0.4)` } :
-                      isTopPick ? { borderColor: `rgba(${config.accentRgb}, 0.6)` } : {}
+                      isCurrent ? { borderColor: `rgba(${config.accentRgb}, 0.4)`, background: `rgba(${config.accentRgb}, 0.02)` } :
+                      isTopPick ? { borderColor: `rgba(${config.accentRgb}, 0.6)`, boxShadow: `0 0 15px rgba(${config.accentRgb}, 0.1)` } : {}
                     }
                   >
-                    {isCurrent && <span className="absolute top-3 right-3 text-[10px] text-[var(--yp-text-muted)]">●</span>}
-                    <div className="font-display font-bold text-[12px] sm:text-[13px] tracking-[-0.01em] mb-0.5 sm:mb-1 truncate pr-6">{vault.name}</div>
-                    <div className="flex items-center gap-1.5 font-data text-[9px] sm:text-[10px] text-[var(--yp-text-muted)] mb-2.5 sm:mb-3">
-                      <span className="capitalize truncate">{vault.protocol.replace('-', ' ')}</span>
-                      <span className="px-1.5 py-0 rounded bg-[var(--yp-surface-3)] text-[7px] sm:text-[8px] border border-[var(--yp-border)] shrink-0">
+                    {isCurrent && <span className="absolute top-4 right-4 text-[10px] animate-pulse" style={{ color: config.accent }}>●</span>}
+                    <div className="font-display font-bold text-[13px] tracking-tight mb-1 truncate pr-6">{vault.name}</div>
+                    <div className="flex items-center gap-2 font-data text-[9px] text-[var(--yp-text-muted)] mb-3">
+                      <span className="capitalize">{vault.protocol.replace('-', ' ')}</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-[var(--yp-surface-3)] text-[7px] border border-[var(--yp-border)]">
                         {vault.chainName.toUpperCase()}
                       </span>
                     </div>
                     <div
-                      className="font-data text-[18px] sm:text-[20px] font-medium tracking-[-0.02em] mb-2"
+                      className="font-data text-[22px] font-bold tracking-tight mb-2 group-hover:scale-[1.05] transition-transform origin-left"
                       style={{ color: config.accent }}
                     >
                       {vault.apy.toFixed(2)}%
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-data text-[8px] sm:text-[9px] text-[var(--yp-text-muted)] tracking-[0.08em] hidden sm:inline">STABILITY</span>
-                      <div className="stability-bar flex-1">
+                       <div className="h-1 flex-1 bg-[var(--yp-surface-3)] rounded-full overflow-hidden">
                         <div
-                          className="stability-bar-fill"
+                          className="h-full rounded-full transition-all duration-1000"
                           style={{
                             width: `${stabPct}%`,
                             background: stabPct > 70 ? config.accent : stabPct > 40 ? '#fbbf24' : '#ef4444',
                           }}
                         />
                       </div>
-                      <span className="font-data text-[8px] sm:text-[9px] text-[var(--yp-text-secondary)]">{stabPct}%</span>
+                      <span className="font-data text-[8px] text-[var(--yp-text-secondary)] font-bold">{stabPct}%</span>
                     </div>
                   </div>
                 );
               })}
             </div>
           </motion.div>
+        </div>
 
-          {/* Agent Log */}
-          <motion.div {...fadeUp(0.2)} className="bento-card p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="meta-label text-[8px] sm:text-[9px]" style={{ opacity: 1 }}>AGENT LOG</div>
-              <span
-                className="w-[6px] sm:w-[7px] h-[6px] sm:h-[7px] rounded-full shrink-0"
-                style={{
-                  background: config.accent,
-                  boxShadow: `0 0 8px ${config.accent}`,
-                  animation: 'pulse-dot 1.5s ease-in-out infinite',
-                }}
-              />
+        {/* ═══════ RIGHT: COMMAND CENTER ═══════ */}
+        <div className="hidden xl:flex flex-col bg-[var(--yp-bg)] overflow-hidden">
+          {/* Header for Command Center */}
+          <div className="px-5 py-4 border-b border-[var(--yp-border)] flex items-center justify-between bg-[var(--yp-surface)]/40 backdrop-blur-sm shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: config.accent, boxShadow: `0 0 10px ${config.accent}` }} />
+               <span className="meta-label text-[10px] font-bold tracking-[0.2em] opacity-100">AGENT COMMAND CENTER</span>
             </div>
-            <div className="flex flex-col gap-0.5 max-h-[200px] sm:max-h-[260px] overflow-y-auto custom-scrollbar">
-              {agentLog.length === 0 ? (
-                <div className="font-data text-[10px] sm:text-[11px] text-[var(--yp-text-muted)] py-6 text-center">
-                  Agent initializing observation protocols...
+            <div className="font-data text-[8px] text-[var(--yp-text-muted)] tracking-widest uppercase">Secured Channel</div>
+          </div>
+
+          <div className="flex-1 flex flex-col min-h-0">
+             {/* Chat Section */}
+             <div className="flex-1 min-h-0 border-b border-[var(--yp-border)]">
+                <AgentChat accent={config.accent} accentRgb={config.accentRgb} isEmbedded={true} />
+             </div>
+
+             {/* Agent Console / Log Center */}
+             <div className="h-[280px] flex flex-col overflow-hidden bg-[var(--yp-surface)]/20">
+                <div className="px-5 py-3 border-b border-[var(--yp-border)] flex items-center justify-between">
+                   <div className="meta-label text-[8px]">LOG_OUTPUT_STREAM</div>
+                   <div className="flex gap-1">
+                      {[1, 2, 3].map(i => <div key={i} className="w-1 h-1 rounded-full opacity-30" style={{ background: config.accent }} />)}
+                   </div>
                 </div>
-              ) : (
-                agentLog.map((log) => (
-                  <div
-                    key={log.timestamp}
-                    className="flex gap-2.5 sm:gap-3.5 px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg transition-colors hover:bg-[var(--yp-surface-2)] min-h-[36px] sm:min-h-[auto]"
-                  >
-                    <span className="font-data text-[9px] sm:text-[10px] text-[var(--yp-text-muted)] shrink-0 pt-0.5 tracking-[0.05em]">
-                      [{fmtTime(log.timestamp)}]
-                    </span>
-                    <span
-                      className="font-data text-[10px] sm:text-[11px] leading-[1.6]"
-                      style={{
-                        color:
-                          log.type === 'action' ? config.accent :
-                          log.type === 'warning' ? '#f59e0b' :
-                          log.type === 'success' ? '#34d399' :
-                          'var(--yp-text-secondary)',
-                      }}
-                    >
-                      {log.message}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </motion.div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-1">
+                   {agentLog.length === 0 ? (
+                      <div className="font-data text-[10px] text-[var(--yp-text-muted)] py-8 text-center animate-pulse">
+                        Awaiting system initialization...
+                      </div>
+                    ) : (
+                      agentLog.slice(-50).map((log, i) => (
+                        <div
+                          key={log.timestamp + i}
+                          className="flex gap-3 px-2 py-1.5 rounded hover:bg-white/5 transition-colors border-l-2 border-transparent hover:border-[var(--yp-accent)]"
+                        >
+                          <span className="font-data text-[8px] text-[var(--yp-text-muted)] pt-0.5 opacity-50">
+                            [{fmtTime(log.timestamp)}]
+                          </span>
+                          <span
+                            className="font-data text-[10px] leading-relaxed"
+                            style={{
+                              color:
+                                log.type === 'action' ? config.accent :
+                                log.type === 'warning' ? '#f59e0b' :
+                                log.type === 'success' ? '#34d399' :
+                                'var(--yp-text-secondary)',
+                            }}
+                          >
+                            <span className="mr-2 opacity-30">❯</span>{log.message}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                </div>
+             </div>
+          </div>
+        </div>
 
-          {/* Transaction History */}
-          <motion.div {...fadeUp(0.25)} className="bento-card p-4 sm:p-6">
+        {/* Fallback for smaller screens where the console is below */}
+        <div className="xl:hidden overflow-y-auto custom-scrollbar p-4 sm:p-7 flex flex-col gap-6">
+           <AgentConsole accent={config.accent} accentRgb={config.accentRgb} />
+           
+           {/* Mobile Agent Log */}
+           <div className="bento-card p-5">
+              <div className="meta-label mb-4">SYSTEM LOGS</div>
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                {agentLog.map((log, i) => (
+                  <div key={i} className="flex gap-3 text-[11px] font-data font-medium">
+                    <span className="text-[var(--yp-text-muted)] shrink-0">[{fmtTime(log.timestamp)}]</span>
+                    <span style={{ color: log.type === 'action' ? config.accent : log.type === 'warning' ? '#fba11b' : log.type === 'success' ? '#4ade80' : 'inherit' }}>{log.message}</span>
+                  </div>
+                ))}
+              </div>
+           </div>
+
+           <motion.div {...fadeUp(0.25)} className="bento-card p-4 sm:p-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
                 <Receipt size={13} style={{ color: config.accent }} />
@@ -659,6 +688,21 @@ export default function DashboardScreen() {
         </div>
       </div>
 
+      {/* Persistent floating chat toggle for mobile */}
+      <div className="xl:hidden fixed bottom-6 right-6 z-40">
+         <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowChat(true)}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl relative group overflow-hidden"
+            style={{ background: config.accent }}
+         >
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform" />
+            <config.icon size={24} color="#000" />
+            {/* Notification dot if needed */}
+         </motion.button>
+      </div>
+
       {/* Deposit More Modal */}
       <DepositMoreModal
         open={showDepositMore}
@@ -673,6 +717,8 @@ export default function DashboardScreen() {
         accentRgb={config.accentRgb}
       />
       <AgentChat accent={config.accent} accentRgb={config.accentRgb} open={showChat} onClose={() => setShowChat(false)} />
+    </div>
+ent} accentRgb={config.accentRgb} open={showChat} onClose={() => setShowChat(false)} />
     </div>
   );
 }
