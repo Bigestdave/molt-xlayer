@@ -241,8 +241,8 @@ export default function DashboardScreen() {
             <span className="hidden sm:inline">{activeVault.chainName}</span>
           </div>
           <WalletMenu />
-        </div>
-      <      {/* Dashboard body */}
+               </div>
+      {/* Dashboard body */}
       <div className="flex-1 grid grid-cols-1 xl:grid-cols-[350px_1fr_400px] lg:grid-cols-[320px_1fr] gap-0 overflow-hidden lg:h-[calc(100dvh-57px)]">
         {/* ═══════ LEFT: CREATURE PANEL ═══════ */}
         <div className="border-b lg:border-b-0 lg:border-r border-[var(--yp-border)] flex flex-col overflow-y-auto custom-scrollbar bg-[var(--yp-surface)]/30">
