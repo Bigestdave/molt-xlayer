@@ -121,8 +121,8 @@ export default function VaultSelectScreen() {
   const handleDeposit = () => {
     if (!selectedVault || !isConnected || !address) return;
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 1) {
-      toast.error('Enter a valid amount (minimum $1)');
+    if (isNaN(numAmount) || numAmount < 0.05) {
+      toast.error('Enter a valid amount (minimum $0.05)');
       return;
     }
     resetComposer();
