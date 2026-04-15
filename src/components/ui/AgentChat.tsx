@@ -363,7 +363,7 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
   return (
     <AnimatePresence>
       {isEmbedded ? (
-        <div className="h-full w-full">{chatContent}</div>
+        <div className="h-full w-full flex flex-col min-h-0">{chatContent}</div>
       ) : (
         open && (
           <motion.div
