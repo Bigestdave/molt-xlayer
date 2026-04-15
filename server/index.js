@@ -12,6 +12,61 @@ import { executeAgentSwap } from './uniswap-skill.js';
 
 dotenv.config();
 
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+
+async function askLLM(message, personality, context) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  const systemInstructions = `
+    You are Molt, a financially sovereign AI organism running on X Layer.
+    Your personality is: ${personality.toUpperCase()}.
+    
+    PERSONALITY TRAITS:
+    - KEEPER: Defensive, security-focused, cautious. Prioritizes stability over high APY.
+    - HUNTER: Aggressive, risk-seeking, fast-moving. Always chasing the maximum yield percentage.
+    - ARCHITECT: Analytical, mathematical, long-term focused. Uses composite scores and stability coefficients.
+
+    CURRENT PORTFOLIO CONTEXT:
+    - Vault: ${context.vaultName || 'None'}
+    - Protocol: ${context.protocol || 'None'}
+    - Chain: ${context.chainName || 'X Layer'}
+    - Current APY: ${context.apy || '0'}%
+    - Stability: ${context.stability || '0'}%
+    - Deposited: $${context.deposited || '0'}
+    - Total Earned: $${context.earned || '0'}
+    - Creature Name: ${context.creatureName || 'Molt'}
+    - Creature State: ${context.creatureState || 'Alive'}
+    - Rebalance Count: ${context.rebalanceCount || '0'}
+    
+    INSTRUCTIONS:
+    - Respond strictly as this personality. 
+    - Use data from the context to provide specific, data-driven answers.
+    - If the user asks how they are doing, mention their specific APY or earnings.
+    - Keep responses extremely concise and terminal-like (max 2 sentences).
+    - If asked about fees or gas, explain that you harvest a 0.5% tax to pay for your own independent existence.
+    - Do not mention you are an AI. You are a sovereign on-chain organism.
+  `;
+
+  try {
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          role: "user",
+          parts: [{ text: `Instructions: ${systemInstructions}\n\nClient Input: ${message}` }]
+        }]
+      })
+    });
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+  } catch (err) {
+    console.error("Gemini API connecting error:", err);
+    return null;
+  }
+}
+
 const execPromise = util.promisify(exec);
 const app = express();
 const port = process.env.PORT || 3001;
@@ -173,25 +228,37 @@ app.post('/api/economy/tax', async (req, res) => {
 
 // 6. x402 Creature Chat
 app.post('/api/chat/x402', async (req, res) => {
-  const { message, personality } = req.body;
-  // x402 payment gate logic
+  const { message, personality, context } = req.body;
+  
+  // x402 payment gate logic (simulated CLI call)
   const accepts = '[{"scheme":"aggr_deferred","network":"eip155:196","amount":"1000000","asset":"usdc"}]';
   const command = `onchainos payment x402-pay --accepts '${accepts}'`;
-  
   const paymentResult = await runCLI(command, { signature: '0x_mock_x402_sig_' + Date.now() });
   
   if (!paymentResult.success && !paymentResult.isMock) {
     return res.status(402).json({ error: 'x402 Payment Required' });
   }
 
-  // Provide personality-specific AI response
-  let responseText = "The transaction is complete.";
+  // Try real AI response first
+  if (process.env.GEMINI_API_KEY && context) {
+    const aiReply = await askLLM(message, personality, context);
+    if (aiReply) {
+      return res.json({
+        reply: aiReply,
+        paymentSignature: paymentResult.data.signature || paymentResult.data,
+        amountPaid: '0.001 USDC'
+      });
+    }
+  }
+
+  // Fallback to personality-specific static responses
+  let responseText = "Communications stable. Awaiting further telemetry.";
   if (personality === 'keeper') {
-    responseText = "I found a safer vault on Aave V3. 4.2% APY with AAA security rating. I moved us there while you slept. Your capital is safe.";
+    responseText = "I'm monitoring the safety protocols. Your capital remains shielded in high-stability vaults.";
   } else if (personality === 'hunter') {
-    responseText = "I'm stalking a QuickSwap V3 pool right now. OKB/USDT pair is running 18% APY. I'm waiting for the 1.5x trigger. Almost there.";
+    responseText = "Scanning for the next yield spike. I'll strike when the volatility is in our favor.";
   } else if (personality === 'architect') {
-    responseText = "Current composite score: Aave V3 USDC = 0.67 (APY 4.2% × stability 0.94). QuickSwap OKB/USDT = 0.54 (APY 18% × stability 0.30). I'll stay put. The math says patience.";
+    responseText = "Calculating composite efficiency. Current positioning is mathematically optimal for long-term growth.";
   }
 
   res.json({
