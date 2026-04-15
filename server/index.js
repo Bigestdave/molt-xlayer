@@ -289,10 +289,7 @@ app.post('/api/chat/x402', async (req, res) => {
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`Molt backend listening on port ${port}`);
-});
-
-
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Molt backend listening on port ${port}`);
+  console.log(`[BOOTUP] Molt backend initialized.`);
+  console.log(`[BOOTUP] Listening on port: ${port}`);
+  console.log(`[BOOTUP] Ready for transactions and chat.`);
 });
