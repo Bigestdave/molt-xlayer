@@ -99,7 +99,7 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
       setTimeout(() => {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: 'Initiating X Layer autonomous execution loop...\nBypassing human approval mechanisms.\nExecuting Uniswap rebalance protocol...' },
+          { role: 'assistant', content: 'Starting my autonomous routine on X Layer...\nChecking the best yields for you, and automatically executing the rebalance transaction!' },
         ]);
       }, 500);
 
@@ -108,12 +108,12 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
       if (result.success) {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: `Execution complete. Organism self-sustained.\n\nRebalance TX: ${result.rebalanceTxHash?.slice(0, 10)}...\nEconomy Tax Harvest: ${result.taxTxHash?.slice(0, 10)}...` },
+          { role: 'assistant', content: `All done! I successfully managed your portfolio and funded my own operations.\n\n✅ Rebalance: ${result.rebalanceTxHash?.slice(0, 10)}...\n✅ Economy Tax: ${result.taxTxHash?.slice(0, 10)}...` },
         ]);
       } else {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: `Execution failed: ${result.error}` },
+          { role: 'assistant', content: `Oops, I couldn't complete the transaction: ${result.error}` },
         ]);
       }
       setIsLoading(false);
@@ -379,4 +379,3 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
     </AnimatePresence>
   );
 }
-
