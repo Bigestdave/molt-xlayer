@@ -14,6 +14,9 @@ services:
       - key: OKX_API_KEY
         sync: false
         placeholder: "Your OKX API Key"
+      - key: OKX_PROJECT_ID
+        sync: false
+        placeholder: "Your OKX Web3 Project ID"
       - key: OKX_SECRET_KEY
         sync: false
         placeholder: "Your OKX Secret"

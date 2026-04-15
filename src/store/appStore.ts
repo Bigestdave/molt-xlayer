@@ -15,6 +15,7 @@ export interface NormalizedVault {
   asset: string;
   stabilityScore: number;
   apyBreakdown?: Record<string, number>;
+  source?: 'live' | 'mock';
 }
 
 export interface LogEntry {

@@ -33,14 +33,17 @@ export async function getBridgeQuote(
     const probeUsd = 10;
 
     const params = new URLSearchParams({
-      path: '/v1/quote',
-      fromChain: String(fromChainId),
-      toChain: String(toChainId),
-      fromToken,
-      toToken,
-      fromAddress: '0x0000000000000000000000000000000000000001',
-      toAddress: '0x0000000000000000000000000000000000000001',
-      fromAmount: probeAmount,
+      path: '/api/v5/dex/aggregator/quote',
+      // Some OKX docs use `chainId`, while others use `fromChainId`.
+      // We send both to maximize compatibility across aggregator environments.
+      chainId: String(fromChainId),
+      fromChainId: String(fromChainId),
+      toChainId: String(toChainId),
+      fromTokenAddress: fromToken,
+      toTokenAddress: toToken,
+      amount: probeAmount,
+      userWalletAddress: '0x0000000000000000000000000000000000000001',
+      slippage: '0.005',
     });
 
     const res = await fetch(`${PROXY_BASE}?${params}`, {
@@ -55,7 +58,8 @@ export async function getBridgeQuote(
     const data = await res.json();
 
     // Extract fee from the estimate
-    const toAmountRaw = data.estimate?.toAmount || data.estimate?.toAmountMin;
+    const quote = Array.isArray(data?.data) ? data.data[0] : data?.data ?? data;
+    const toAmountRaw = quote?.toTokenAmount || quote?.toAmount || quote?.toAmountMin || quote?.outAmount;
     if (!toAmountRaw) return null;
 
     const toAmountUsd = parseInt(toAmountRaw) / 1_000_000; // USDC 6 decimals
@@ -63,9 +67,12 @@ export async function getBridgeQuote(
     const feePercentage = feeForProbe / probeUsd;
 
     // Estimate gas from the quote
-    const gasCostsUsd = data.estimate?.gasCosts?.reduce(
-      (sum: number, g: { amountUSD?: string }) => sum + parseFloat(g.amountUSD || '0'), 0
-    ) ?? 0;
+    const gasCostsUsd = parseFloat(
+      quote?.gasFeeUsd ??
+      quote?.estimatedGasFeeUsd ??
+      quote?.gasUsd ??
+      '0'
+    );
 
     // Scale to actual deposit
     const scaledFee = (feePercentage * depositAmountUsd) + gasCostsUsd;

@@ -1,18 +1,17 @@
 import express from 'express';
 import cors from 'cors';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import util from 'util';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 const app = express();
 const port = process.env.PORT || 3001;
+const X_LAYER_CHAIN = 'xlayer';
+const X_LAYER_CHAIN_ID = 196;
 
 // Allow multiple origins (local dev and production domain)
 const allowedOrigins = [
@@ -39,19 +38,56 @@ app.use(express.json());
 // Health check for Render deployment
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
-// Helper to safely run onchainos commands, with fallback mocks for hackathon presentation if CLI fails
-async function runCLI(command, fallbackData) {
+function isAddress(value) {
+  return typeof value === 'string' && /^0x[a-fA-F0-9]{40}$/.test(value);
+}
+
+function isPositiveAmount(value) {
+  const n = typeof value === 'string' ? Number(value) : value;
+  return Number.isFinite(n) && n > 0;
+}
+
+function isTokenSelector(value) {
+  if (typeof value !== 'string' || value.length < 2 || value.length > 64) return false;
+  return isAddress(value) || /^[A-Za-z0-9._-]+$/.test(value);
+}
+
+function getConfiguredWallets() {
+  const keeper = process.env.KEEPER_WALLET;
+  const hunter = process.env.HUNTER_WALLET;
+  const architect = process.env.ARCHITECT_WALLET;
+  if (isAddress(keeper) && isAddress(hunter) && isAddress(architect)) {
+    return { keeper, hunter, architect };
+  }
+  return null;
+}
+
+function parseWallets(data) {
+  if (!data || typeof data !== 'object') return null;
+  const candidate = {
+    keeper: data.keeper || data.Keeper || data.KEEPER_WALLET,
+    hunter: data.hunter || data.Hunter || data.HUNTER_WALLET,
+    architect: data.architect || data.Architect || data.ARCHITECT_WALLET,
+  };
+  return (isAddress(candidate.keeper) && isAddress(candidate.hunter) && isAddress(candidate.architect))
+    ? candidate
+    : null;
+}
+
+// Helper to safely run onchainos commands without shell interpolation
+async function runCLI(args) {
   try {
     // Inject OKX credentials into the environment for non-interactive auth
-    const env = { 
+    const env = {
       ...process.env,
+      OKX_PROJECT_ID: process.env.OKX_PROJECT_ID,
       OKX_API_KEY: process.env.OKX_API_KEY,
       OKX_SECRET_KEY: process.env.OKX_SECRET_KEY,
       OKX_PASSPHRASE: process.env.OKX_PASSPHRASE
     };
 
-    const { stdout, stderr } = await execPromise(command, { env });
-    console.log(`[CLI Exec]: ${command}`);
+    const { stdout, stderr } = await execFilePromise('onchainos', args, { env, maxBuffer: 1024 * 1024 * 5 });
+    console.log('[CLI Exec]: onchainos command executed');
     if (stderr && !stderr.includes('Warning')) {
       console.warn(`[CLI Stderr]: ${stderr}`);
     }
@@ -62,38 +98,42 @@ async function runCLI(command, fallbackData) {
       return { success: true, data: stdout.trim() };
     }
   } catch (error) {
-    console.error(`[CLI Error]: Execution failed for ${command}`, error.message);
-    if (fallbackData) {
-      console.log(`[CLI Fallback]: Returning mocked data for demo purposes.`);
-      return { success: true, data: fallbackData, isMock: true };
-    }
+    console.error('[CLI Error]: Execution failed for onchainos command', error.message);
     return { success: false, error: error.message };
   }
 }
 
 // 1. Deploy 3 Agentic Wallets on X Layer
 app.post('/api/wallet/deploy', async (req, res) => {
-  // okx-agentic-wallet deployment
-  // In reality this might require interactive login, so we provide an automated script or a fallback
-  const mockWallets = {
-    keeper: process.env.KEEPER_WALLET || '0x33321424774570994c55507cff43e6290c53ed30',
-    hunter: process.env.HUNTER_WALLET || '0x926b11bfbfca6aba60d49b7af9673a19141d9c61',
-    architect: process.env.ARCHITECT_WALLET || '0x42d2d00c6db549e51612feb49958b91150156afa'
-  };
-  
-  // Attempt to read from real onchainos or use mock
-  const result = await runCLI('onchainos wallet addresses --chain xlayer', mockWallets);
-  res.json(result);
+  const configured = getConfiguredWallets();
+  if (configured) {
+    return res.json({ success: true, data: configured, source: 'env' });
+  }
+
+  const result = await runCLI(['wallet', 'addresses', '--chain', X_LAYER_CHAIN]);
+  if (!result.success) {
+    return res.status(502).json({
+      success: false,
+      error: 'Failed to resolve agentic wallets from Onchain OS CLI. Configure KEEPER_WALLET, HUNTER_WALLET, ARCHITECT_WALLET env vars as a fallback.'
+    });
+  }
+
+  const parsed = parseWallets(result.data);
+  if (!parsed) {
+    return res.status(502).json({
+      success: false,
+      error: 'Onchain OS returned wallet data in an unsupported format. Please set KEEPER_WALLET, HUNTER_WALLET, ARCHITECT_WALLET.'
+    });
+  }
+  res.json({ success: true, data: parsed, source: 'onchainos' });
 });
 
 // 2. okx-defi-invest discover
 app.get('/api/defi/discover', async (req, res) => {
-  const mockVaults = [
-    { id: 'aave-v3-usdc', address: '0xAaveV3XLayerUSDC', protocol: 'Aave V3', asset: 'USDC', name: 'Aave V3 USDC (X Layer)', apy: 4.2, chainId: 196, chainName: 'X Layer', stabilityScore: 0.94, tvlUsd: 45000000 },
-    { id: 'quickswap-v3-okb-usdt', address: '0xQuickSwapV3XLayer', protocol: 'QuickSwap V3', asset: 'USDC', name: 'QuickSwap V3 OKB/USDT', apy: 18.5, chainId: 196, chainName: 'X Layer', stabilityScore: 0.30, tvlUsd: 12000000 },
-    { id: 'dolomite-usdt', address: '0xDolomiteXLayerUSDT', protocol: 'Dolomite', asset: 'USDC', name: 'Dolomite USDT (X Layer)', apy: 8.4, chainId: 196, chainName: 'X Layer', stabilityScore: 0.75, tvlUsd: 28000000 }
-  ];
-  const result = await runCLI('onchainos defi-invest discover --chain xlayer', mockVaults);
+  const result = await runCLI(['defi-invest', 'discover', '--chain', X_LAYER_CHAIN]);
+  if (!result.success) {
+    return res.status(502).json({ success: false, error: 'Failed to discover vaults on X Layer via Onchain OS.' });
+  }
   res.json(result);
 });
 
@@ -103,51 +143,85 @@ app.post('/api/swap/execute', async (req, res) => {
   if (!from || !to || !amount || !wallet) {
     return res.status(400).json({ error: "Missing swap parameters" });
   }
-
-  // Uses okx-dex-swap with MEV protection flag as required
-  const command = `onchainos swap execute --from ${from} --to ${to} --readable-amount ${amount} --chain xlayer --wallet ${wallet} --mev-protection true`;
-  
-  const mockData = {
-    txHash: '0x' + Math.random().toString(16).substr(2, 40),
-    status: 'success',
-    explorerUrl: `https://www.oklink.com/xlayer/tx/hash_mock`
-  };
-
-  const result = await runCLI(command, mockData);
+  if (!isTokenSelector(from) || !isTokenSelector(to) || !isAddress(wallet) || !isPositiveAmount(amount)) {
+    return res.status(400).json({ success: false, error: 'Invalid swap parameters.' });
+  }
+  const result = await runCLI([
+    'swap',
+    'execute',
+    '--from', from,
+    '--to', to,
+    '--readable-amount', String(amount),
+    '--chain', X_LAYER_CHAIN,
+    '--wallet', wallet,
+    '--mev-protection', 'true'
+  ]);
+  if (!result.success) {
+    return res.status(502).json({ success: false, error: 'Swap execution failed on Onchain OS.' });
+  }
   res.json(result);
 });
 
 // 4. okx-security scan
 app.post('/api/security/scan', async (req, res) => {
   const { token } = req.body;
-  const command = `onchainos security scan --token ${token || '0x'} --chain xlayer`;
-  const mockData = { riskDetected: false, message: 'Vault contract scanned and verified safe. No honeypots detected.' };
-  const result = await runCLI(command, mockData);
+  if (!isAddress(token)) {
+    return res.status(400).json({ success: false, error: 'Invalid token address for security scan.' });
+  }
+  const result = await runCLI(['security', 'scan', '--token', token, '--chain', X_LAYER_CHAIN]);
+  if (!result.success) {
+    return res.status(502).json({ success: false, error: 'Security scan failed on Onchain OS.' });
+  }
   res.json(result);
 });
 
 // 5. Economy Loop (0.5% Tax)
 app.post('/api/economy/tax', async (req, res) => {
   const { amount, wallet } = req.body;
+  if (!isPositiveAmount(amount) || !isAddress(wallet)) {
+    return res.status(400).json({ success: false, error: 'Invalid tax parameters.' });
+  }
   // Send the tax to the creature's own wallet
-  const taxAmount = amount * 0.005; 
-  const command = `onchainos wallet send --chain xlayer --readable-amount ${taxAmount} --to ${wallet} --contract-token USDC`;
-  const mockData = { txHash: '0x' + Math.random().toString(16).substr(2, 40), status: 'success', taxed: taxAmount };
-  const result = await runCLI(command, mockData);
-  res.json(result);
+  const taxAmount = Number(amount) * 0.005;
+  if (!isPositiveAmount(taxAmount)) {
+    return res.status(400).json({ success: false, error: 'Calculated tax amount is invalid.' });
+  }
+  const result = await runCLI([
+    'wallet',
+    'send',
+    '--chain', X_LAYER_CHAIN,
+    '--readable-amount', String(taxAmount),
+    '--to', wallet,
+    '--contract-token', 'USDC'
+  ]);
+  if (!result.success) {
+    return res.status(502).json({ success: false, error: 'Tax transfer failed on Onchain OS.' });
+  }
+  res.json({ success: true, data: { ...result.data, taxed: taxAmount } });
 });
 
 // 6. x402 Creature Chat
 app.post('/api/chat/x402', async (req, res) => {
   const { message, personality } = req.body;
+  const trimmedMessage = typeof message === 'string' ? message.trim() : '';
+  if (!trimmedMessage || trimmedMessage.length > 2000) {
+    return res.status(400).json({ success: false, error: 'Invalid message payload.' });
+  }
+  if (!['keeper', 'hunter', 'architect'].includes(personality)) {
+    return res.status(400).json({ success: false, error: 'Invalid personality.' });
+  }
+
   // x402 payment gate logic
   const accepts = '[{"scheme":"aggr_deferred","network":"eip155:196","amount":"1000000","asset":"usdc"}]';
-  const command = `onchainos payment x402-pay --accepts '${accepts}'`;
-  
-  const paymentResult = await runCLI(command, { signature: '0x_mock_x402_sig_' + Date.now() });
-  
-  if (!paymentResult.success && !paymentResult.isMock) {
-    return res.status(402).json({ error: 'x402 Payment Required' });
+  const paymentResult = await runCLI(['payment', 'x402-pay', '--accepts', accepts]);
+  if (!paymentResult.success) {
+    return res.status(402).json({
+      success: false,
+      error: 'x402 Payment Required',
+      accepts,
+      chainId: X_LAYER_CHAIN_ID,
+      amount: '0.001 USDC'
+    });
   }
 
   // Provide personality-specific AI response
@@ -161,8 +235,9 @@ app.post('/api/chat/x402', async (req, res) => {
   }
 
   res.json({
+    success: true,
     reply: responseText,
-    paymentSignature: paymentResult.data.signature || paymentResult.data,
+    paymentSignature: paymentResult.data?.signature || paymentResult.data,
     amountPaid: '0.001 USDC'
   });
 });

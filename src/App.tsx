@@ -19,6 +19,10 @@ const screenVariants = {
   exit: { opacity: 0, scale: 0.98, y: -12, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } },
 };
 
+function isAddress(value: unknown): value is string {
+  return typeof value === 'string' && /^0x[a-fA-F0-9]{40}$/.test(value);
+}
+
 function RestoreOverlay({ accentRgb }: { accentRgb: string }) {
   return (
     <motion.div
@@ -177,15 +181,27 @@ export default function App() {
       fetch('/api/wallet/deploy', { method: 'POST' })
         .then(res => res.json())
         .then(data => {
-          if (data && data.success && data.data) {
-            setAgenticWallets({
-              keeper: typeof data.data === 'string' ? '0xKeeper196' : data.data.keeper || '0xKeeperMock',
-              hunter: typeof data.data === 'string' ? '0xHunter196' : data.data.hunter || '0xHunterMock',
-              architect: typeof data.data === 'string' ? '0xArchitect196' : data.data.architect || '0xArchitectMock',
+          const wallets = data?.data;
+          if (
+            data?.success &&
+            wallets &&
+            isAddress(wallets.keeper) &&
+            isAddress(wallets.hunter) &&
+            isAddress(wallets.architect)
+          ) {
+            setAgenticWallets(wallets);
+          } else {
+            toast.error('Agentic wallet setup failed', {
+              description: data?.error || 'Backend did not return valid X Layer wallet addresses.',
             });
           }
         })
-        .catch(err => console.error("Failed to deploy agentic wallets:", err));
+        .catch(err => {
+          console.error("Failed to deploy agentic wallets:", err);
+          toast.error('Agentic wallet setup failed', {
+            description: 'Could not reach backend wallet deployment endpoint.',
+          });
+        });
     }
   }, [agenticWallets, setAgenticWallets]);
 
