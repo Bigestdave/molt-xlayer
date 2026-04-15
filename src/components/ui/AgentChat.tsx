@@ -127,6 +127,7 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
         body: JSON.stringify({
           message: text.trim(),
           personality: personality,
+          context: getPortfolioContext(),
         }),
       });
 
