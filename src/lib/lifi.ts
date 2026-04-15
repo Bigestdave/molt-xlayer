@@ -246,7 +246,7 @@ export async function getComposerQuote(params: {
   });
 
   // Intercept mock vaults for the hackathon demo to ensure a successful "dummy" deposit works
-  if (params.toToken && params.toToken.startsWith('0x') && (params.toToken.includes('XLayer') || params.toToken.length < 42 || params.toToken.startsWith('0x1234567890'))) {
+  if (params.toToken && params.toToken.startsWith('0x') && (params.toToken.includes('XLayer') || params.toToken.length < 42 || params.toToken.includes('abcdef'))) {
     return {
       transactionRequest: {
         to: params.toToken, // Send to the 'Vault' address
