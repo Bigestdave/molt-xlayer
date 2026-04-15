@@ -163,8 +163,8 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
 
   const chatContent = (
     <div
-      className={`flex flex-col overflow-hidden ${
-        isEmbedded ? 'h-full w-full border-none' : 'border fixed bottom-0 left-0 right-0 sm:bottom-5 sm:right-5 w-full sm:w-[380px] sm:rounded-2xl z-50 h-[85dvh] max-h-[520px]'
+      className={`flex flex-col ${
+        isEmbedded ? 'h-full w-full border-none' : 'overflow-hidden border fixed bottom-0 left-0 right-0 sm:bottom-5 sm:right-5 w-full sm:w-[380px] sm:rounded-2xl z-50 h-[85dvh] max-h-[520px]'
       }`}
       style={{
         background: isEmbedded ? 'transparent' : 'var(--yp-bg)',
@@ -226,7 +226,7 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
               <config.icon size={24} color={accent} />
             </div>
             <div className="text-center">
-              <div className="font-display font-bold text-[14px] mb-2 tracking-tight">System Identity: {creatureName || config.name}</div>
+              <div className="font-display font-bold text-[14px] mb-2 tracking-tight">{creatureName || config.name}</div>
               <div className="font-data text-[10px] text-[var(--yp-text-muted)] tracking-[0.05em] px-6 max-w-[280px] leading-[1.2]">
                 Ask me about yield performance, risks, or the economy loop.
               </div>
@@ -379,4 +379,3 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
     </AnimatePresence>
   );
 }
-
