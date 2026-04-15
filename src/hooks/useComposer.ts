@@ -3,6 +3,7 @@ import type { Hex } from 'viem';
 import { API_BASE_URL } from '../lib/lifi';
 
 export type ComposerStep = 'idle' | 'quoting' | 'signing' | 'submitted' | 'confirmed' | 'failed';
+const USDC_DECIMALS = 6;
 
 interface SwapExecutionResponse {
   success: boolean;
@@ -27,7 +28,6 @@ export function useComposer() {
   const [step, setStep] = useState<ComposerStep>('idle');
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<Hex | null>(null);
-  const [quote, setQuote] = useState<null>(null);
 
   const execute = useCallback(async (params: {
     fromChain: number;
@@ -40,10 +40,8 @@ export function useComposer() {
     try {
       setError(null);
       setTxHash(null);
-      setQuote(null);
 
       setStep('quoting');
-      setStep('signing');
 
       const endpoint = `${API_BASE_URL || ''}/api/swap/execute`;
       const response = await withTimeout(
@@ -53,7 +51,8 @@ export function useComposer() {
           body: JSON.stringify({
             from: params.fromToken,
             to: params.toToken,
-            amount: Number(params.fromAmount) / 1_000_000,
+            // Backend expects a human-readable token amount.
+            amount: Number(params.fromAmount) / 10 ** USDC_DECIMALS,
             wallet: params.fromAddress,
           }),
         }),
@@ -65,11 +64,13 @@ export function useComposer() {
       if (!response.ok || !payload.success) {
         throw new Error(payload.error || `Swap failed with status ${response.status}`);
       }
+      setStep('signing');
 
       const hash =
         (typeof payload.data === 'string'
           ? payload.data
-          : payload.data?.txHash) || `0x${'0'.repeat(64)}`;
+          : payload.data?.txHash);
+      if (!hash) throw new Error('Swap succeeded but no transaction hash was returned.');
 
       setTxHash(hash as Hex);
       setStep('submitted');
@@ -87,8 +88,7 @@ export function useComposer() {
     setStep('idle');
     setError(null);
     setTxHash(null);
-    setQuote(null);
   }, []);
 
-  return { step, error, txHash, quote, receipt: null, isWaitingReceipt: false, execute, reset };
+  return { step, error, txHash, receipt: null, isWaitingReceipt: false, execute, reset };
 }

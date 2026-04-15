@@ -73,6 +73,9 @@ const CHAIN_NAMES: Record<number, string> = {
   534352: 'Scroll',
 };
 
+let discoverCache: { at: number; vaults: NormalizedVault[] } | null = null;
+const DISCOVER_CACHE_TTL_MS = 30_000;
+
 function normalizeVault(raw: RawVault): NormalizedVault {
   // Extract from nested analytics (live API) or flat fields (mock)
   const rawApy = raw.analytics?.apy?.total ?? raw.apy ?? 0;
@@ -137,6 +140,7 @@ export async function fetchVaults(chainId?: number): Promise<NormalizedVault[]> 
     const vaults = result.data;
     if (vaults.length === 0) throw new Error('Empty response');
     const norm = vaults.map(normalizeVault);
+    discoverCache = { at: Date.now(), vaults: norm };
     if (chainId) return norm.filter(v => v.chainId === chainId);
     return norm;
   } catch (err) {
@@ -148,11 +152,8 @@ export async function fetchVaults(chainId?: number): Promise<NormalizedVault[]> 
 
 export async function fetchVaultDetail(chainId: number, address: string): Promise<NormalizedVault | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/defi/discover`);
-    if (!res.ok) throw new Error(`API returned ${res.status}`);
-    const result = await res.json();
-    if (!result.success) throw new Error(result.error);
-    const all = (result.data ?? []).map(normalizeVault) as NormalizedVault[];
+    const cacheValid = discoverCache && Date.now() - discoverCache.at < DISCOVER_CACHE_TTL_MS;
+    const all = cacheValid ? discoverCache.vaults : await fetchVaults();
     return all.find(v => v.chainId === chainId && v.address.toLowerCase() === address.toLowerCase()) ?? null;
   } catch {
     return MOCK_VAULTS.find(v => v.chainId === chainId && v.address === address) ?? null;

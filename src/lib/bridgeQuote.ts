@@ -1,4 +1,9 @@
 import { USDC_ADDRESSES } from '../constants/chains';
+const XLAYER_CHAIN_ID = 196;
+const XLAYER_ROUTE_FEE_BPS = 20; // 0.20%
+const STANDARD_ROUTE_FEE_BPS = 35; // 0.35%
+const XLAYER_BASE_GAS_USD = 0.08;
+const STANDARD_BASE_GAS_USD = 0.22;
 
 export interface BridgeQuoteResult {
   feeUsd: number;
@@ -24,9 +29,9 @@ export async function getBridgeQuote(
   const toToken = USDC_ADDRESSES[toChainId];
   if (!fromToken || !toToken) return null;
 
-  const isXLayerRoute = fromChainId === 196 || toChainId === 196;
-  const bps = isXLayerRoute ? 20 : 35; // 0.20% / 0.35%
-  const baseGasUsd = isXLayerRoute ? 0.08 : 0.22;
+  const isXLayerRoute = fromChainId === XLAYER_CHAIN_ID || toChainId === XLAYER_CHAIN_ID;
+  const bps = isXLayerRoute ? XLAYER_ROUTE_FEE_BPS : STANDARD_ROUTE_FEE_BPS;
+  const baseGasUsd = isXLayerRoute ? XLAYER_BASE_GAS_USD : STANDARD_BASE_GAS_USD;
   const variableFee = (depositAmountUsd * bps) / 10_000;
   const totalFee = Math.max(variableFee + baseGasUsd, 0);
 
