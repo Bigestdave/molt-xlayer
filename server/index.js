@@ -159,9 +159,14 @@ app.post('/api/wallet/deploy', async (req, res) => {
 // 2. okx-defi-invest discover
 app.get('/api/defi/discover', async (req, res) => {
   const mockVaults = [
-    { id: 'aave-v3-usdc', address: '0xAaveV3XLayerUSDC', protocol: 'Aave V3', asset: 'USDC', name: 'Aave V3 USDC (X Layer)', apy: 4.2, chainId: 196, chainName: 'X Layer', stabilityScore: 0.94, tvlUsd: 45000000 },
-    { id: 'quickswap-v3-okb-usdt', address: '0xQuickSwapV3XLayer', protocol: 'QuickSwap V3', asset: 'USDC', name: 'QuickSwap V3 OKB/USDT', apy: 18.5, chainId: 196, chainName: 'X Layer', stabilityScore: 0.30, tvlUsd: 12000000 },
-    { id: 'dolomite-usdt', address: '0xDolomiteXLayerUSDT', protocol: 'Dolomite', asset: 'USDC', name: 'Dolomite USDT (X Layer)', apy: 8.4, chainId: 196, chainName: 'X Layer', stabilityScore: 0.75, tvlUsd: 28000000 }
+    { id: 'xl-aave-v3', address: '0x1234567890abcdef1234567890abcdef12345678', protocol: 'Aave V3', asset: 'USDC', name: 'Aave V3 USDC (X Layer)', apy: 4.22, chainId: 196, chainName: 'X Layer', stabilityScore: 0.94, tvlUsd: 45200000 },
+    { id: 'xl-quick-v3', address: '0x2345678901abcdef2345678901abcdef23456789', protocol: 'QuickSwap V3', asset: 'USDC', name: 'QuickSwap V3 USDC/OKB Pool', apy: 18.45, chainId: 196, chainName: 'X Layer', stabilityScore: 0.32, tvlUsd: 12500000 },
+    { id: 'xl-dolo-usdc', address: '0x3456789012abcdef3456789012abcdef34567890', protocol: 'Dolomite', asset: 'USDC', name: 'Dolomite USDC-Isolated', apy: 8.31, chainId: 196, chainName: 'X Layer', stabilityScore: 0.76, tvlUsd: 28100000 },
+    { id: 'xl-uni-v4', address: '0x4567890123abcdef4567890123abcdef45678901', protocol: 'Uniswap V4', asset: 'USDC', name: 'Uniswap v4 USDC/OKB Yield', apy: 14.12, chainId: 196, chainName: 'X Layer', stabilityScore: 0.45, tvlUsd: 8200000 },
+    { id: 'xl-comp-comet', address: '0x5678901234abcdef5678901234abcdef56789012', protocol: 'Compound', asset: 'USDC', name: 'Comet USDC Optimizer', apy: 5.11, chainId: 196, chainName: 'X Layer', stabilityScore: 0.88, tvlUsd: 31200000 },
+    { id: 'xl-beefy-multi', address: '0x6789012345abcdef6789012345abcdef67890123', protocol: 'Beefy', asset: 'USDC', name: 'Beefy USDC Multi-Strategy', apy: 9.67, chainId: 196, chainName: 'X Layer', stabilityScore: 0.64, tvlUsd: 4500000 },
+    { id: 'xl-curve-3pool', address: '0x7890123456abcdef7890123456abcdef78901234', protocol: 'Curve', asset: 'USDC', name: 'Curve 3Pool-X (USDC/USDT)', apy: 6.42, chainId: 196, chainName: 'X Layer', stabilityScore: 0.82, tvlUsd: 56000000 },
+    { id: 'xl-lido-prox', address: '0x8901234567abcdef8901234567abcdef89012345', protocol: 'Lido', asset: 'USDC', name: 'Lido-Proxy USDC Reward Vault', apy: 3.12, chainId: 196, chainName: 'X Layer', stabilityScore: 0.96, tvlUsd: 120000000 }
   ];
   const result = await runCLI('onchainos defi-invest discover --chain xlayer', mockVaults);
   res.json(result);
@@ -282,6 +287,11 @@ app.post('/api/chat/x402', async (req, res) => {
     amountPaid: '0.001 USDC'
   });
 });
+
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Molt backend listening on port ${port}`);
+});
+
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Molt backend listening on port ${port}`);
