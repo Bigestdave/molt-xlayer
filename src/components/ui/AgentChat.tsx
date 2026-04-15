@@ -116,15 +116,10 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
           { role: 'assistant', content: `Execution failed: ${result.error}` },
         ]);
       }
+      }
       setIsLoading(false);
       return;
     }
-
-    const userMsg: Msg = { role: 'user', content: text.trim() };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setInput('');
-    setIsLoading(true);
 
     try {
       const resp = await fetch(`${API_BASE_URL}${CHAT_URL}`, {
