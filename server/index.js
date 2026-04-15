@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 import { executeAgentSwap } from './uniswap-skill.js';
 
 dotenv.config();
+console.log(`[BOOTUP] GEMINI_API_KEY is ${process.env.GEMINI_API_KEY ? 'LOADED' : 'NOT FOUND IN ENV'}`);
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
@@ -247,20 +248,21 @@ app.post('/api/chat/x402', async (req, res) => {
     try {
       const aiReply = await askLLM(message, personality, context);
       if (aiReply) {
-        console.log(`[Chat Success]: Gemini responded successfully.`);
+        console.log(`[Chat Success]: Gemini responded with: "${aiReply.slice(0, 30)}..."`);
         return res.json({
           reply: aiReply,
           paymentSignature: paymentResult.data.signature || paymentResult.data,
           amountPaid: '0.001 USDC'
         });
       } else {
-        console.warn(`[Chat Warning]: Gemini returned empty response, falling back to static.`);
+        console.warn(`[Chat Warning]: Gemini returned a null response. Key might be invalid or quota reached.`);
       }
     } catch (err) {
-      console.error(`[Chat Error]: Gemini API call failed:`, err.message);
+      console.error(`[Chat CRITICAL ERROR]: Gemini execution failed:`, err);
     }
-  } else if (!process.env.GEMINI_API_KEY) {
-    console.warn(`[Chat Warning]: GEMINI_API_KEY is missing in environment variables.`);
+  } else {
+    if (!process.env.GEMINI_API_KEY) console.warn(`[Chat Skip]: Skipping AI because GEMINI_API_KEY is missing.`);
+    if (!context) console.warn(`[Chat Skip]: Skipping AI because 'context' object was missing in request.`);
   }
 
   // Fallback to personality-specific static responses
