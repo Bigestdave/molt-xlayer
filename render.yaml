@@ -11,6 +11,11 @@ services:
         value: 3001
       - key: NODE_ENV
         value: production
+      - key: RPC_URL
+        value: https://rpc.xlayer.tech
+      - key: PRIVATE_KEY
+        sync: false
+        placeholder: "Your Agent Wallet Private Key"
       - key: OKX_API_KEY
         sync: false
         placeholder: "Your OKX API Key"

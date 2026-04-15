@@ -6,7 +6,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { ethers } from 'ethers';
 import dotenv from 'dotenv';
+import { executeAgentSwap } from './uniswap-skill.js';
 
 dotenv.config();
 
@@ -80,6 +82,18 @@ app.post('/api/wallet/deploy', async (req, res) => {
     hunter: process.env.HUNTER_WALLET || '0x926b11bfbfca6aba60d49b7af9673a19141d9c61',
     architect: process.env.ARCHITECT_WALLET || '0x42d2d00c6db549e51612feb49958b91150156afa'
   };
+
+  // If a private key is provided, we use that for the agentic wallet instead of mocks
+  if (process.env.PRIVATE_KEY) {
+    try {
+      const wallet = new ethers.Wallet(process.env.PRIVATE_KEY);
+      mockWallets.keeper = wallet.address;
+      mockWallets.hunter = wallet.address;
+      mockWallets.architect = wallet.address;
+    } catch (e) {
+      console.warn("Invalid PRIVATE_KEY in .env");
+    }
+  }
   
   // Attempt to read from real onchainos or use mock
   const result = await runCLI('onchainos wallet addresses --chain xlayer', mockWallets);
@@ -104,7 +118,27 @@ app.post('/api/swap/execute', async (req, res) => {
     return res.status(400).json({ error: "Missing swap parameters" });
   }
 
-  // Uses okx-dex-swap with MEV protection flag as required
+  // --- NEW: Web3 Native Bypass ---
+  // If PRIVATE_KEY is present, we perform a direct on-chain swap using Uniswap smart contracts
+  if (process.env.PRIVATE_KEY) {
+    console.log(`[Direct Execution] Detected PRIVATE_KEY. Using Uniswap Skill...`);
+    const result = await executeAgentSwap(from, to, amount);
+    
+    if (result.success) {
+      return res.json({
+        success: true,
+        data: {
+          txHash: result.hash,
+          status: 'success',
+          explorerUrl: `https://www.oklink.com/xlayer/tx/${result.hash}`
+        }
+      });
+    } else {
+      return res.status(500).json({ success: false, error: result.error });
+    }
+  }
+
+  // Fallback to Onchain OS CLI if no private key is provided
   const command = `onchainos swap execute --from ${from} --to ${to} --readable-amount ${amount} --chain xlayer --wallet ${wallet} --mev-protection true`;
   
   const mockData = {
