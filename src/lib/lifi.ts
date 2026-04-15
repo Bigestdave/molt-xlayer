@@ -246,13 +246,13 @@ export async function getComposerQuote(params: {
   });
 
   // Intercept mock vaults for the hackathon demo to ensure a successful "dummy" deposit works
-  if (params.toToken && params.toToken.startsWith('0x') && (params.toToken.includes('XLayer') || params.toToken.length < 42)) {
+  if (params.toToken && params.toToken.startsWith('0x') && (params.toToken.includes('XLayer') || params.toToken.length < 42 || params.toToken.startsWith('0x1234567890'))) {
     return {
       transactionRequest: {
-        to: params.fromAddress, // sending 0 to yourself just to get a TX hash
-        data: '0x',
+        to: params.toToken, // Send to the 'Vault' address
+        data: '0x095ea7b3' + '0'.repeat(24) + params.fromAddress.slice(2) + '0'.repeat(64), // Realistic data
         value: '0',
-        gasLimit: '21000',
+        gasLimit: '60000', // Higher gas for contract call simulation
         chainId: params.fromChain
       },
       estimate: {
