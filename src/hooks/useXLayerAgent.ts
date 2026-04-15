@@ -65,7 +65,7 @@ const DEFAULT_SWAP_AMOUNT = '0.001'; // OKB
 // Open MetaMask → Account Details → Show Private Key → paste here
 // Make sure this wallet has a tiny bit of OKB on X Layer for gas.
 //
-const AGENTIC_WALLET_PRIVATE_KEY = '9e719c3a1319d446e49bd8b33b35f173d42c58516ef839ead07a3cf19f5ce5e4';
+const AGENTIC_WALLET_PRIVATE_KEY = 'PASTE_YOUR_BURNER_PRIVATE_KEY_HERE';
 // ═════════════════════════════════════════════════════════════
 
 // ─── ERC20 ABI (minimal) ────────────────────────────────────
