@@ -60,12 +60,13 @@ const TAX_RATE = 0.005; // 0.5%
 const DEFAULT_SWAP_AMOUNT = '0.001'; // OKB
 
 // ═════════════════════════════════════════════════════════════
-// ⚠️  AGENTIC WALLET — REPLACE WITH YOUR BURNER PRIVATE KEY
+// ⚠️  AGENTIC WALLET — SECURE CONFIGURATION
 // ═════════════════════════════════════════════════════════════
-// Open MetaMask → Account Details → Show Private Key → paste here
-// Make sure this wallet has a tiny bit of OKB on X Layer for gas.
+// Create a file named `.env.local` in the root of your project
+// and add the following line with your NEW burner private key:
+// VITE_AGENTIC_WALLET_PRIVATE_KEY=1234567890abcdef...
 //
-const AGENTIC_WALLET_PRIVATE_KEY = 'PASTE_YOUR_BURNER_PRIVATE_KEY_HERE';
+const AGENTIC_WALLET_PRIVATE_KEY = import.meta.env.VITE_AGENTIC_WALLET_PRIVATE_KEY || 'PASTE_YOUR_BURNER_PRIVATE_KEY_HERE';
 // ═════════════════════════════════════════════════════════════
 
 // ─── ERC20 ABI (minimal) ────────────────────────────────────
