@@ -180,8 +180,7 @@ export async function fetchProtocols(): Promise<ProtocolInfo[]> {
   ];
 }
 
-export async function fetchPortfolioPositions(walletAddress: string): Promise<unknown[]> {
-  if (!walletAddress) return [];
+export async function fetchPortfolioPositions(_walletAddress: string): Promise<unknown[]> {
   return [];
 }
 

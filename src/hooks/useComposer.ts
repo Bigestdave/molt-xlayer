@@ -66,10 +66,7 @@ export function useComposer() {
       }
       setStep('signing');
 
-      const hash =
-        (typeof payload.data === 'string'
-          ? payload.data
-          : payload.data?.txHash);
+      const hash = typeof payload.data === 'string' ? payload.data : payload.data?.txHash;
       if (!hash) throw new Error('Swap succeeded but no transaction hash was returned.');
 
       setTxHash(hash as Hex);
