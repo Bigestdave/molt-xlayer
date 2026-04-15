@@ -51,7 +51,7 @@ export function formatBreakeven(days: number): string {
 }
 
 /**
- * Estimate bridge fee from a LI.FI quote response.
+ * Estimate bridge fee from route output.
  * Uses the difference between fromAmount and toAmount as the total cost (fee + slippage).
  */
 export function estimateBridgeFee(fromAmountUsd: number, toAmountUsd: number): number {

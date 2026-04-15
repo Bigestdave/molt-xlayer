@@ -1,7 +1,5 @@
 import { USDC_ADDRESSES } from '../constants/chains';
 
-const PROXY_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/lifi-proxy`;
-
 export interface BridgeQuoteResult {
   feeUsd: number;
   estimateToAmount: string;
@@ -9,9 +7,8 @@ export interface BridgeQuoteResult {
 }
 
 /**
- * Get a LI.FI quote to estimate bridge fees between two chains.
- * Uses a small probe amount ($10 USDC) to estimate percentage-based fees,
- * then scales to the actual deposit.
+ * Estimate cross-chain withdrawal cost for UX preview.
+ * Uses a conservative heuristic until a dedicated quote endpoint is exposed.
  */
 export async function getBridgeQuote(
   fromChainId: number,
@@ -27,56 +24,15 @@ export async function getBridgeQuote(
   const toToken = USDC_ADDRESSES[toChainId];
   if (!fromToken || !toToken) return null;
 
-  try {
-    // Use a probe amount to estimate fees (avoids balance requirements)
-    const probeAmount = '10000000'; // 10 USDC (6 decimals)
-    const probeUsd = 10;
+  const isXLayerRoute = fromChainId === 196 || toChainId === 196;
+  const bps = isXLayerRoute ? 20 : 35; // 0.20% / 0.35%
+  const baseGasUsd = isXLayerRoute ? 0.08 : 0.22;
+  const variableFee = (depositAmountUsd * bps) / 10_000;
+  const totalFee = Math.max(variableFee + baseGasUsd, 0);
 
-    const params = new URLSearchParams({
-      path: '/v1/quote',
-      fromChain: String(fromChainId),
-      toChain: String(toChainId),
-      fromToken,
-      toToken,
-      fromAddress: '0x0000000000000000000000000000000000000001',
-      toAddress: '0x0000000000000000000000000000000000000001',
-      fromAmount: probeAmount,
-    });
-
-    const res = await fetch(`${PROXY_BASE}?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-
-    // Extract fee from the estimate
-    const toAmountRaw = data.estimate?.toAmount || data.estimate?.toAmountMin;
-    if (!toAmountRaw) return null;
-
-    const toAmountUsd = parseInt(toAmountRaw) / 1_000_000; // USDC 6 decimals
-    const feeForProbe = probeUsd - toAmountUsd;
-    const feePercentage = feeForProbe / probeUsd;
-
-    // Estimate gas from the quote
-    const gasCostsUsd = data.estimate?.gasCosts?.reduce(
-      (sum: number, g: { amountUSD?: string }) => sum + parseFloat(g.amountUSD || '0'), 0
-    ) ?? 0;
-
-    // Scale to actual deposit
-    const scaledFee = (feePercentage * depositAmountUsd) + gasCostsUsd;
-
-    return {
-      feeUsd: Math.max(scaledFee, 0),
-      estimateToAmount: String(depositAmountUsd - scaledFee),
-      gasUsd: gasCostsUsd,
-    };
-  } catch (err) {
-    console.warn('Bridge quote failed:', err);
-    return null;
-  }
+  return {
+    feeUsd: totalFee,
+    estimateToAmount: String(Math.max(depositAmountUsd - totalFee, 0)),
+    gasUsd: baseGasUsd,
+  };
 }

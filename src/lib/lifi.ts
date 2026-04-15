@@ -147,66 +147,41 @@ export async function fetchVaults(chainId?: number): Promise<NormalizedVault[]> 
 }
 
 export async function fetchVaultDetail(chainId: number, address: string): Promise<NormalizedVault | null> {
-  // Skip API call for mock/short addresses
-  if (!address || address.length < 42) {
-    return MOCK_VAULTS.find(v => v.chainId === chainId && v.address === address) ?? null;
-  }
   try {
-    const res = await proxyFetch(`/v1/earn/vaults/${chainId}/${address}`);
+    const res = await fetch(`${API_BASE_URL}/api/defi/discover`);
     if (!res.ok) throw new Error(`API returned ${res.status}`);
-    const data = await res.json();
-    return normalizeVault(data);
+    const result = await res.json();
+    if (!result.success) throw new Error(result.error);
+    const all = (result.data ?? []).map(normalizeVault) as NormalizedVault[];
+    return all.find(v => v.chainId === chainId && v.address.toLowerCase() === address.toLowerCase()) ?? null;
   } catch {
     return MOCK_VAULTS.find(v => v.chainId === chainId && v.address === address) ?? null;
   }
 }
 
 export async function fetchChains(): Promise<ChainInfo[]> {
-  try {
-    const res = await proxyFetch('/v1/earn/chains');
-    if (!res.ok) throw new Error(`API returned ${res.status}`);
-    const data = await res.json();
-    const raw = Array.isArray(data) ? data : data.chains ?? [];
-    return raw.map((c: { chainId?: number; id?: number; name: string; logoURI?: string }) => ({
-      id: c.chainId ?? c.id ?? 0,
-      name: c.name,
-      logoURI: c.logoURI,
-    }));
-  } catch {
-    return [
-      { id: 1, name: 'Ethereum' },
-      { id: 10, name: 'Optimism' },
-      { id: 137, name: 'Polygon' },
-      { id: 8453, name: 'Base' },
-      { id: 42161, name: 'Arbitrum' },
-    ];
-  }
+  return [
+    { id: 196, name: 'X Layer' },
+    { id: 1, name: 'Ethereum' },
+    { id: 10, name: 'Optimism' },
+    { id: 137, name: 'Polygon' },
+    { id: 8453, name: 'Base' },
+    { id: 42161, name: 'Arbitrum' },
+  ];
 }
 
 export async function fetchProtocols(): Promise<ProtocolInfo[]> {
-  try {
-    const res = await proxyFetch('/v1/earn/protocols');
-    if (!res.ok) throw new Error(`API returned ${res.status}`);
-    const data = await res.json();
-    return Array.isArray(data) ? data : data.protocols ?? [];
-  } catch {
-    return [
-      { name: 'aave-v3' }, { name: 'morpho' }, { name: 'compound-v3' },
-      { name: 'euler' }, { name: 'spark' }, { name: 'lido' },
-      { name: 'beefy' }, { name: 'yearn' }, { name: 'curve' },
-    ];
-  }
+  return [
+    { name: 'aave-v3' },
+    { name: 'quickswap-v3' },
+    { name: 'dolomite' },
+    { name: 'uniswap-v4' },
+  ];
 }
 
 export async function fetchPortfolioPositions(walletAddress: string): Promise<unknown[]> {
-  try {
-    const res = await proxyFetch(`/v1/earn/portfolio/${walletAddress}/positions`);
-    if (!res.ok) throw new Error(`API returned ${res.status}`);
-    const data = await res.json();
-    return Array.isArray(data) ? data : data.positions ?? [];
-  } catch {
-    return [];
-  }
+  if (!walletAddress) return [];
+  return [];
 }
 
 // Composer uses COMPOSER_BASE_URL defined at top

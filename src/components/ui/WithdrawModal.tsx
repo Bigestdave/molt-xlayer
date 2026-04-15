@@ -14,7 +14,7 @@ import { getBridgeQuote, type BridgeQuoteResult } from '../../lib/bridgeQuote';
 const STEP_LABELS: Record<string, string> = {
   idle: 'Preparing...',
   quoting: 'Getting best route...',
-  signing: 'Approve in wallet...',
+  signing: 'Executing on OKX DEX...',
   submitted: 'Transaction submitted...',
   confirmed: 'Withdrawal confirmed!',
   failed: '',

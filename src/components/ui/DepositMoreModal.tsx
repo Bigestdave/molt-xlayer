@@ -13,7 +13,7 @@ import { CHAIN_ICONS } from '../icons/ChainIcons';
 const STEP_LABELS: Record<string, string> = {
   idle: 'Preparing...',
   quoting: 'Getting best route...',
-  signing: 'Approve in wallet...',
+  signing: 'Executing on OKX DEX...',
   submitted: 'Transaction submitted...',
   confirmed: 'Deposit confirmed!',
   failed: '',

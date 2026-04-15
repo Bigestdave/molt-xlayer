@@ -1,34 +1,18 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useSendTransaction, useWaitForTransactionReceipt, useAccount, usePublicClient } from 'wagmi';
-import { getComposerQuote, type ComposerQuote } from '../lib/lifi';
-import { encodeFunctionData, type Abi, type Hex } from 'viem';
-
-const ERC20_ABI = [
-  {
-    type: 'function',
-    stateMutability: 'view',
-    name: 'allowance',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    stateMutability: 'nonpayable',
-    name: 'approve',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-] as const satisfies Abi;
-
-const NATIVE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000';
+import { useState, useCallback } from 'react';
+import type { Hex } from 'viem';
+import { API_BASE_URL } from '../lib/lifi';
 
 export type ComposerStep = 'idle' | 'quoting' | 'signing' | 'submitted' | 'confirmed' | 'failed';
+
+interface SwapExecutionResponse {
+  success: boolean;
+  data?: {
+    txHash?: string;
+    status?: string;
+    explorerUrl?: string;
+  } | string;
+  error?: string;
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -43,25 +27,7 @@ export function useComposer() {
   const [step, setStep] = useState<ComposerStep>('idle');
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<Hex | null>(null);
-  const [quote, setQuote] = useState<ComposerQuote | null>(null);
-
-  const { chain } = useAccount();
-  const { sendTransactionAsync } = useSendTransaction();
-  const publicClient = usePublicClient();
-  const { data: receipt, isLoading: isWaitingReceipt } = useWaitForTransactionReceipt({
-    hash: txHash ?? undefined,
-  });
-
-  useEffect(() => {
-    if (receipt && step === 'submitted') {
-      if (receipt.status === 'reverted') {
-        setError('Transaction reverted on-chain. This usually means insufficient token balance or allowance.');
-        setStep('failed');
-      } else {
-        setStep('confirmed');
-      }
-    }
-  }, [receipt, step]);
+  const [quote, setQuote] = useState<null>(null);
 
   const execute = useCallback(async (params: {
     fromChain: number;
@@ -74,93 +40,48 @@ export function useComposer() {
     try {
       setError(null);
       setTxHash(null);
-
-      if (chain?.id !== params.fromChain) {
-        throw new Error(
-          `Your wallet is on the wrong network. Please switch to the correct chain in your wallet and try again.`
-        );
-      }
+      setQuote(null);
 
       setStep('quoting');
-      const q = await withTimeout(
-        getComposerQuote(params),
-        30_000,
-        'Route quote'
-      );
-      setQuote(q);
-
       setStep('signing');
 
-      const approvalAddress = q.estimate?.approvalAddress as Hex | undefined;
-      const isNativeToken = params.fromToken.toLowerCase() === NATIVE_TOKEN_ADDRESS;
-
-      if (!isNativeToken && approvalAddress) {
-        if (!publicClient) {
-          throw new Error('Wallet client unavailable. Please reconnect your wallet and try again.');
-        }
-
-        const allowance = await publicClient.readContract({
-          address: params.fromToken as Hex,
-          abi: ERC20_ABI,
-          functionName: 'allowance',
-          args: [params.fromAddress as Hex, approvalAddress],
-        } as never) as bigint;
-
-        if (allowance < BigInt(params.fromAmount)) {
-          const approvalHash = await sendTransactionAsync({
-            to: params.fromToken as Hex,
-            data: encodeFunctionData({
-              abi: ERC20_ABI,
-              functionName: 'approve',
-              args: [approvalAddress, BigInt(params.fromAmount)],
-            }),
-            value: 0n,
-            chainId: params.fromChain,
-          });
-
-          await withTimeout(
-            publicClient.waitForTransactionReceipt({ hash: approvalHash }),
-            60_000,
-            'Token approval'
-          );
-        }
-      }
-
-      const hash = await sendTransactionAsync({
-        to: q.transactionRequest.to as Hex,
-        data: q.transactionRequest.data as Hex,
-        value: BigInt(q.transactionRequest.value || '0'),
-        gas: q.transactionRequest.gasLimit ? BigInt(q.transactionRequest.gasLimit) : undefined,
-        chainId: params.fromChain,
-      });
-
-      setTxHash(hash);
-      setStep('submitted');
-
-      // Wait for on-chain confirmation before resolving
-      if (!publicClient) {
-        throw new Error('Wallet client unavailable.');
-      }
-
-      const txReceipt = await withTimeout(
-        publicClient.waitForTransactionReceipt({ hash }),
-        120_000,
-        'Transaction confirmation'
+      const endpoint = `${API_BASE_URL || ''}/api/swap/execute`;
+      const response = await withTimeout(
+        fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: params.fromToken,
+            to: params.toToken,
+            amount: Number(params.fromAmount) / 1_000_000,
+            wallet: params.fromAddress,
+          }),
+        }),
+        30_000,
+        'OKX DEX swap execution'
       );
 
-      if (txReceipt.status === 'reverted') {
-        throw new Error('Transaction reverted on-chain. You may not have enough tokens for this deposit.');
+      const payload = await response.json() as SwapExecutionResponse;
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || `Swap failed with status ${response.status}`);
       }
 
+      const hash =
+        (typeof payload.data === 'string'
+          ? payload.data
+          : payload.data?.txHash) || `0x${'0'.repeat(64)}`;
+
+      setTxHash(hash as Hex);
+      setStep('submitted');
       setStep('confirmed');
-      return hash;
+      return hash as Hex;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Transaction failed';
       setError(message);
       setStep('failed');
       throw err;
     }
-  }, [sendTransactionAsync, publicClient, chain?.id]);
+  }, []);
 
   const reset = useCallback(() => {
     setStep('idle');
@@ -169,5 +90,5 @@ export function useComposer() {
     setQuote(null);
   }, []);
 
-  return { step, error, txHash, quote, receipt, isWaitingReceipt, execute, reset };
+  return { step, error, txHash, quote, receipt: null, isWaitingReceipt: false, execute, reset };
 }

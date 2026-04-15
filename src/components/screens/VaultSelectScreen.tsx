@@ -21,7 +21,7 @@ function ShimmerRow() {
 const STEP_LABELS: Record<string, string> = {
   idle: 'Preparing...',
   quoting: 'Getting best route...',
-  signing: 'Approve in wallet...',
+  signing: 'Executing on OKX DEX...',
   submitted: 'Transaction submitted...',
   confirmed: 'Deposit confirmed!',
   failed: '',
@@ -516,7 +516,7 @@ export default function VaultSelectScreen() {
                     <h3 className="font-display font-bold text-[16px] mb-2">{STEP_LABELS[step]}</h3>
                     <p className="font-data text-[11px] text-[var(--yp-text-muted)]">
                       {step === 'quoting' && 'Finding the optimal route for your deposit...'}
-                      {step === 'signing' && 'Please approve the transaction in your wallet.'}
+                      {step === 'signing' && 'Executing your swap and preparing confirmation...'}
                       {step === 'submitted' && 'Waiting for on-chain confirmation...'}
                     </p>
                     {txHash && (
@@ -627,7 +627,7 @@ export default function VaultSelectScreen() {
                     </div>
 
                     <div className="font-data text-[10px] text-[var(--yp-text-muted)] bg-[var(--yp-surface-2)] rounded-lg px-3 py-2.5 mb-5 leading-[1.6]">
-                      Your USDC on {sourceChainName} will be routed via LI.FI into the vault{sourceChainId !== selectedVault.chainId ? ` on ${selectedVault.chainName}` : ''}. No private keys leave your browser.
+                      Your USDC on {sourceChainName} will be routed via OKX X Layer DEX into the vault{sourceChainId !== selectedVault.chainId ? ` on ${selectedVault.chainName}` : ''}. No private keys leave your browser.
                     </div>
 
                     <div className="flex gap-3">
