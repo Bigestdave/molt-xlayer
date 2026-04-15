@@ -163,12 +163,12 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
 
   const chatContent = (
     <div
-      className={`flex flex-col overflow-hidden border ${
-        isEmbedded ? 'h-full rounded-2xl w-full' : 'fixed bottom-0 left-0 right-0 sm:bottom-5 sm:right-5 w-full sm:w-[380px] sm:rounded-2xl z-50 h-[85dvh] max-h-[520px]'
+      className={`flex flex-col overflow-hidden ${
+        isEmbedded ? 'h-full w-full border-none' : 'border fixed bottom-0 left-0 right-0 sm:bottom-5 sm:right-5 w-full sm:w-[380px] sm:rounded-2xl z-50 h-[85dvh] max-h-[520px]'
       }`}
       style={{
         background: isEmbedded ? 'transparent' : 'var(--yp-bg)',
-        borderColor: `rgba(${accentRgb}, 0.25)`,
+        borderColor: isEmbedded ? 'transparent' : `rgba(${accentRgb}, 0.25)`,
         boxShadow: isEmbedded ? 'none' : `0 20px 50px rgba(0,0,0,0.5)`,
       }}
     >
@@ -226,25 +226,25 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
               <config.icon size={24} color={accent} />
             </div>
             <div className="text-center">
-              <div className="font-display font-bold text-[14px] mb-1.5 tracking-tight">System Identity: {creatureName || config.name}</div>
-              <div className="font-data text-[10px] text-[var(--yp-text-muted)] tracking-[0.05em] px-6 max-w-[280px]">
+              <div className="font-display font-bold text-[14px] mb-2 tracking-tight">System Identity: {creatureName || config.name}</div>
+              <div className="font-data text-[10px] text-[var(--yp-text-muted)] tracking-[0.05em] px-6 max-w-[280px] leading-[1.2]">
                 Ask me about yield performance, risks, or the economy loop.
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 justify-center max-w-[320px]">
+            <div className="flex flex-col gap-2 w-full max-w-[280px]">
               {SUGGESTED_QUESTIONS.map((q) => (
                 <button
                   key={q}
                   onClick={() => sendMessage(q)}
-                  className="font-data text-[10px] px-3 py-1.5 rounded-lg border cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:border-[var(--yp-border-hover)]"
+                  className={`font-data text-[10px] px-4 py-3 rounded-xl border cursor-pointer transition-all flex items-center justify-center gap-2 hover:border-[var(--yp-border-hover)] ${q.includes('Execute') ? 'font-bold uppercase tracking-[0.05em] w-full' : ''}`}
                   style={{
                     borderColor: q.includes('Execute') ? `rgba(${accentRgb}, 0.5)` : `rgba(${accentRgb}, 0.2)`,
                     color: q.includes('Execute') ? accent : 'var(--yp-text-secondary)',
-                    background: q.includes('Execute') ? `rgba(${accentRgb}, 0.1)` : `rgba(${accentRgb}, 0.04)`,
-                    boxShadow: q.includes('Execute') ? `0 0 10px rgba(${accentRgb}, 0.1)` : undefined,
+                    background: q.includes('Execute') ? `rgba(${accentRgb}, 0.08)` : `rgba(${accentRgb}, 0.04)`,
+                    boxShadow: q.includes('Execute') ? `0 0 20px rgba(${accentRgb}, 0.3)` : undefined,
                   }}
                 >
-                  {q.includes('Execute') && <Play size={10} color={accent} className="fill-current" />}
+                  {q.includes('Execute') && <Play size={12} color={accent} className="fill-current" />}
                   {q}
                 </button>
               ))}
@@ -379,3 +379,4 @@ export default function AgentChat({ accent, accentRgb, open, onClose, isEmbedded
     </AnimatePresence>
   );
 }
+
