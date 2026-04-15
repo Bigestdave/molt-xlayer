@@ -243,6 +243,7 @@ export default function DashboardScreen() {
           <WalletMenu />
         </div>
       </nav>
+
       {/* Dashboard body */}
       <div className="flex-1 grid grid-cols-1 xl:grid-cols-[350px_1fr_400px] lg:grid-cols-[320px_1fr] gap-0 overflow-hidden lg:h-[calc(100dvh-57px)]">
         {/* ═══════ LEFT: CREATURE PANEL ═══════ */}
@@ -545,49 +546,59 @@ export default function DashboardScreen() {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {rankedVaults.map((vault) => {
-                const isCurrent = vault.id === activeVault.id;
-                const isTopPick = !isCurrent && config.shouldRebalance(activeVault, vault);
-                const stabPct = Math.round(vault.stabilityScore * 100);
-
-                return (
-                  <div
-                    key={vault.id}
-                    className="bg-[var(--yp-surface)] border border-[var(--yp-border)] rounded-2xl p-4 relative transition-all duration-300 hover:border-[var(--yp-border-hover)] hover:bg-[var(--yp-surface-3)] group cursor-pointer"
-                    style={
-                      isCurrent ? { borderColor: `rgba(${config.accentRgb}, 0.4)`, background: `rgba(${config.accentRgb}, 0.02)` } :
-                      isTopPick ? { borderColor: `rgba(${config.accentRgb}, 0.6)`, boxShadow: `0 0 15px rgba(${config.accentRgb}, 0.1)` } : {}
-                    }
-                  >
-                    {isCurrent && <span className="absolute top-4 right-4 text-[10px] animate-pulse" style={{ color: config.accent }}>●</span>}
-                    <div className="font-display font-bold text-[13px] tracking-tight mb-1 truncate pr-6">{vault.name}</div>
-                    <div className="flex items-center gap-2 font-data text-[9px] text-[var(--yp-text-muted)] mb-3">
-                      <span className="capitalize">{vault.protocol.replace('-', ' ')}</span>
-                      <span className="px-1.5 py-0.5 rounded-md bg-[var(--yp-surface-3)] text-[7px] border border-[var(--yp-border)]">
-                        {vault.chainName.toUpperCase()}
-                      </span>
-                    </div>
-                    <div
-                      className="font-data text-[22px] font-bold tracking-tight mb-2 group-hover:scale-[1.05] transition-transform origin-left"
-                      style={{ color: config.accent }}
-                    >
-                      {vault.apy.toFixed(2)}%
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <div className="h-1 flex-1 bg-[var(--yp-surface-3)] rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-1000"
-                          style={{
-                            width: `${stabPct}%`,
-                            background: stabPct > 70 ? config.accent : stabPct > 40 ? '#fbbf24' : '#ef4444',
-                          }}
-                        />
-                      </div>
-                      <span className="font-data text-[8px] text-[var(--yp-text-secondary)] font-bold">{stabPct}%</span>
-                    </div>
+              {rankedVaults.length === 0 ? (
+                <div className="col-span-full border border-[var(--yp-border)] border-dashed rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 rounded-full border border-[var(--yp-border)] flex items-center justify-center mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: config.accent }} />
                   </div>
-                );
-              })}
+                  <div className="font-data text-[10px] text-[var(--yp-text-muted)] tracking-[0.1em] uppercase">No Immediate Actions Required</div>
+                  <div className="font-data text-[9px] text-[var(--yp-text-secondary)] opacity-50">Current yield positioning is mathematically optimal.</div>
+                </div>
+              ) : (
+                rankedVaults.map((vault) => {
+                  const isCurrent = vault.id === activeVault.id;
+                  const isTopPick = !isCurrent && config.shouldRebalance(activeVault, vault);
+                  const stabPct = Math.round(vault.stabilityScore * 100);
+
+                  return (
+                    <div
+                      key={vault.id}
+                      className="bg-[var(--yp-surface)] border border-[var(--yp-border)] rounded-2xl p-4 relative transition-all duration-300 hover:border-[var(--yp-border-hover)] hover:bg-[var(--yp-surface-3)] group cursor-pointer"
+                      style={
+                        isCurrent ? { borderColor: `rgba(${config.accentRgb}, 0.4)`, background: `rgba(${config.accentRgb}, 0.02)` } :
+                        isTopPick ? { borderColor: `rgba(${config.accentRgb}, 0.6)`, boxShadow: `0 0 15px rgba(${config.accentRgb}, 0.1)` } : {}
+                      }
+                    >
+                      {isCurrent && <span className="absolute top-4 right-4 text-[10px] animate-pulse" style={{ color: config.accent }}>●</span>}
+                      <div className="font-display font-bold text-[13px] tracking-tight mb-1 truncate pr-6">{vault.name}</div>
+                      <div className="flex items-center gap-2 font-data text-[9px] text-[var(--yp-text-muted)] mb-3">
+                        <span className="capitalize">{vault.protocol.replace('-', ' ')}</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-[var(--yp-surface-3)] text-[7px] border border-[var(--yp-border)]">
+                          {vault.chainName.toUpperCase()}
+                        </span>
+                      </div>
+                      <div
+                        className="font-data text-[22px] font-bold tracking-tight mb-2 group-hover:scale-[1.05] transition-transform origin-left"
+                        style={{ color: config.accent }}
+                      >
+                        {vault.apy.toFixed(2)}%
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <div className="h-1 flex-1 bg-[var(--yp-surface-3)] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-1000"
+                            style={{
+                              width: `${stabPct}%`,
+                              background: stabPct > 70 ? config.accent : stabPct > 40 ? '#fbbf24' : '#ef4444',
+                            }}
+                          />
+                        </div>
+                        <span className="font-data text-[8px] text-[var(--yp-text-secondary)] font-bold">{stabPct}%</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </motion.div>
         </div>
@@ -605,7 +616,7 @@ export default function DashboardScreen() {
 
           <div className="flex-1 flex flex-col min-h-0">
              {/* Chat Section */}
-             <div className="flex-1 min-h-0 border-b border-[var(--yp-border)]">
+             <div className="flex-1 min-h-0 border-b border-[var(--yp-border)] flex flex-col">
                 <AgentChat accent={config.accent} accentRgb={config.accentRgb} isEmbedded={true} />
              </div>
 
@@ -717,7 +728,7 @@ export default function DashboardScreen() {
         accent={config.accent}
         accentRgb={config.accentRgb}
       />
-            <AgentChat accent={config.accent} accentRgb={config.accentRgb} open={showChat} onClose={() => setShowChat(false)} />
+      <AgentChat accent={config.accent} accentRgb={config.accentRgb} open={showChat} onClose={() => setShowChat(false)} />
     </div>
   );
 }
