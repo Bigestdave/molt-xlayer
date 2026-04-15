@@ -229,6 +229,7 @@ app.post('/api/economy/tax', async (req, res) => {
 // 6. x402 Creature Chat
 app.post('/api/chat/x402', async (req, res) => {
   const { message, personality, context } = req.body;
+  console.log(`[Chat Request]: Message: "${message}", Personality: ${personality}`);
   
   // x402 payment gate logic (simulated CLI call)
   const accepts = '[{"scheme":"aggr_deferred","network":"eip155:196","amount":"1000000","asset":"usdc"}]';
@@ -236,22 +237,34 @@ app.post('/api/chat/x402', async (req, res) => {
   const paymentResult = await runCLI(command, { signature: '0x_mock_x402_sig_' + Date.now() });
   
   if (!paymentResult.success && !paymentResult.isMock) {
+    console.error(`[Chat Error]: Payment gate failed`);
     return res.status(402).json({ error: 'x402 Payment Required' });
   }
 
   // Try real AI response first
   if (process.env.GEMINI_API_KEY && context) {
-    const aiReply = await askLLM(message, personality, context);
-    if (aiReply) {
-      return res.json({
-        reply: aiReply,
-        paymentSignature: paymentResult.data.signature || paymentResult.data,
-        amountPaid: '0.001 USDC'
-      });
+    console.log(`[Chat ID]: Attempting Gemini AI response for ${personality}...`);
+    try {
+      const aiReply = await askLLM(message, personality, context);
+      if (aiReply) {
+        console.log(`[Chat Success]: Gemini responded successfully.`);
+        return res.json({
+          reply: aiReply,
+          paymentSignature: paymentResult.data.signature || paymentResult.data,
+          amountPaid: '0.001 USDC'
+        });
+      } else {
+        console.warn(`[Chat Warning]: Gemini returned empty response, falling back to static.`);
+      }
+    } catch (err) {
+      console.error(`[Chat Error]: Gemini API call failed:`, err.message);
     }
+  } else if (!process.env.GEMINI_API_KEY) {
+    console.warn(`[Chat Warning]: GEMINI_API_KEY is missing in environment variables.`);
   }
 
   // Fallback to personality-specific static responses
+  console.log(`[Chat Fallback]: Using static personality response.`);
   let responseText = "Communications stable. Awaiting further telemetry.";
   if (personality === 'keeper') {
     responseText = "I'm monitoring the safety protocols. Your capital remains shielded in high-stability vaults.";
