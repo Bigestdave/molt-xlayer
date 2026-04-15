@@ -252,13 +252,13 @@ export default function DashboardScreen() {
           <motion.div
             {...fadeUp(0)}
             layoutId="creature-container"
-            className="flex flex-col items-center px-3 pt-3 pb-3 relative"
+            className="flex flex-col items-center px-6 pt-6 pb-4 relative overflow-visible"
             style={{
               background: `radial-gradient(ellipse at 50% 60%, rgba(${config.accentRgb}, 0.07) 0%, transparent 70%)`,
             }}
           >
             <div
-              className="mb-3 sm:mb-4 relative group"
+              className="mb-3 sm:mb-4 relative group flex justify-center w-full min-h-[160px]"
             >
               <CreatureCanvas
                 personality={personality!}
