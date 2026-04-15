@@ -7,6 +7,7 @@ const USDC_DECIMALS = 6n;
 
 function formatUsdcAmount(rawAmount: string): string {
   const raw = BigInt(rawAmount);
+  if (raw < 0n) throw new Error('Amount must be non-negative.');
   const base = 10n ** USDC_DECIMALS;
   const whole = raw / base;
   const fractionRaw = (raw % base).toString().padStart(Number(USDC_DECIMALS), '0');
