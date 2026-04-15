@@ -3,7 +3,16 @@ import type { Hex } from 'viem';
 import { API_BASE_URL } from '../lib/lifi';
 
 export type ComposerStep = 'idle' | 'quoting' | 'signing' | 'submitted' | 'confirmed' | 'failed';
-const USDC_DECIMALS = 6;
+const USDC_DECIMALS = 6n;
+
+function formatUsdcAmount(rawAmount: string): string {
+  const raw = BigInt(rawAmount);
+  const base = 10n ** USDC_DECIMALS;
+  const whole = raw / base;
+  const fractionRaw = (raw % base).toString().padStart(Number(USDC_DECIMALS), '0');
+  const fraction = fractionRaw.replace(/0+$/, '');
+  return fraction ? `${whole}.${fraction}` : whole.toString();
+}
 
 interface SwapExecutionResponse {
   success: boolean;
@@ -52,7 +61,7 @@ export function useComposer() {
             from: params.fromToken,
             to: params.toToken,
             // Backend expects a human-readable token amount.
-            amount: Number(params.fromAmount) / 10 ** USDC_DECIMALS,
+            amount: formatUsdcAmount(params.fromAmount),
             wallet: params.fromAddress,
           }),
         }),

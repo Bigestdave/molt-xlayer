@@ -155,7 +155,8 @@ export async function fetchVaultDetail(chainId: number, address: string): Promis
     const cacheValid = discoverCache && Date.now() - discoverCache.at < DISCOVER_CACHE_TTL_MS;
     const all = cacheValid ? discoverCache.vaults : await fetchVaults();
     return all.find(v => v.chainId === chainId && v.address.toLowerCase() === address.toLowerCase()) ?? null;
-  } catch {
+  } catch (err) {
+    console.warn('Vault detail lookup failed, falling back to mock vault data', err);
     return MOCK_VAULTS.find(v => v.chainId === chainId && v.address === address) ?? null;
   }
 }
