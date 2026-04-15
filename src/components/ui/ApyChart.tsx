@@ -50,8 +50,8 @@ export default function ApyChart({ data, accentRgb, height = 180 }: ApyChartProp
     const timeRange = maxTime - minTime || 1;
 
     const pts = chartData.map(d => ({
-      x: ((d.timestamp - minTime) / timeRange) * width,
-      y: ((yMax - d.apy) / yRange) * chartH,
+      x: 10 + ((d.timestamp - minTime) / timeRange) * (width - 20),
+      y: 5 + ((yMax - d.apy) / yRange) * chartH,
     }));
 
     // Area fill — 5% opacity gradient
